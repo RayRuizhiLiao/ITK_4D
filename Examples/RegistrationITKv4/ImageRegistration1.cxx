@@ -49,6 +49,7 @@
 #include "itkTranslationTransform.h"
 #include "itkMeanSquaresImageToImageMetricv4.h"
 #include "itkRegularStepGradientDescentOptimizerv4.h"
+#include "itkANTSNeighborhoodCorrelationImageToImageMetricv4.h"
 // Software Guide : EndCodeSnippet
 
 
@@ -122,7 +123,7 @@ int main( int argc, char *argv[] )
 
   // Software Guide : BeginCodeSnippet
   const    unsigned int    Dimension = 2;
-  typedef  float           PixelType;
+  typedef  double           PixelType;
   // Software Guide : EndCodeSnippet
 
 
@@ -171,9 +172,13 @@ int main( int argc, char *argv[] )
   //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  typedef itk::MeanSquaresImageToImageMetricv4<
+  //typedef itk::MeanSquaresImageToImageMetricv4<
+  //                                        FixedImageType,
+  //                                        MovingImageType >    MetricType;
+  typedef itk::ANTSNeighborhoodCorrelationImageToImageMetricv4<
                                           FixedImageType,
                                           MovingImageType >    MetricType;
+
   // Software Guide : EndCodeSnippet
 
   //  Software Guide : BeginLatex
@@ -264,6 +269,9 @@ int main( int argc, char *argv[] )
 
   metric->SetFixedInterpolator(  fixedInterpolator  );
   metric->SetMovingInterpolator(  movingInterpolator  );
+  itk::Image< PixelType, Dimension >::SizeType radius;
+  radius.Fill(4);
+  metric->SetRadius(radius);
   // Software Guide : EndCodeSnippet
 
   typedef itk::ImageFileReader< FixedImageType  >   FixedImageReaderType;
@@ -431,6 +439,7 @@ int main( int argc, char *argv[] )
   optimizer->SetLearningRate( 4 );
   optimizer->SetMinimumStepLength( 0.001 );
   optimizer->SetRelaxationFactor( 0.5 );
+  optimizer->SetGradientMagnitudeTolerance( 1e-10 );
   // Software Guide : EndCodeSnippet
 
   bool useEstimator = false;
