@@ -91,7 +91,7 @@ int main( int argc, char *argv[] )
     return EXIT_FAILURE;
     }
 
-  const    unsigned int    ImageDimension = 2;
+  const    unsigned int    ImageDimension = 3;
   typedef  float           PixelType;
 
   typedef itk::Image< PixelType, ImageDimension >  FixedImageType;
