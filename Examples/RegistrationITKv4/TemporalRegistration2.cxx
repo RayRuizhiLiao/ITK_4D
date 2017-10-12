@@ -226,9 +226,9 @@ int main( int argc, char *argv[] )
   //unsigned int numberOfGridNodesInOneDimension = 8;
 
   TransformType::MeshSizeType             meshSize;
-  meshSize.SetElement(0, 25);
-  meshSize.SetElement(1, 25);
-  meshSize.SetElement(2, 20);
+  meshSize.SetElement(0, 20);
+  meshSize.SetElement(1, 20);
+  meshSize.SetElement(2, 16);
   //meshSize.Fill( numberOfGridNodesInOneDimension - SplineOrder );
 
   transformInitializer->SetTransform( outputBSplineTransform );
@@ -299,6 +299,8 @@ int main( int argc, char *argv[] )
   optimizer->SetMaximumNumberOfFunctionEvaluations( 500 );
   optimizer->SetMaximumNumberOfCorrections( 5 );
   std::cout << "Number of Threads: " << optimizer->GetNumberOfThreads() << std::endl;
+  optimizer->SetInitialPosition(outputBSplineTransform->GetParameters());
+  std::cout << "Initialization: " << optimizer->GetCurrentMetricValue() << std::endl;
   // Software Guide : EndCodeSnippet
 
   // Create the Command observer and register it with the optimizer.
