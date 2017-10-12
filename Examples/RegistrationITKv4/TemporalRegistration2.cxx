@@ -120,6 +120,14 @@ public:
   }
 };
 
+template <typename T>
+std::string to_string(T value)
+{
+	std::ostringstream os;
+	os << value;
+	return os.str();
+}
+
 
 int main( int argc, char *argv[] )
 {
@@ -186,6 +194,10 @@ int main( int argc, char *argv[] )
   registration->SetMetric(        metric        );
   registration->SetOptimizer(     optimizer     );
 
+  int numOfImages  = 0;
+  std::sscanf(argv[1], "%d", &numOfImages);
+  std::cout << "There are " << numOfImages << " images in the given series!" << std::endl;
+
 
   typedef itk::ImageFileReader< FixedImageType  > FixedImageReaderType;
   typedef itk::ImageFileReader< MovingImageType > MovingImageReaderType;
@@ -193,318 +205,272 @@ int main( int argc, char *argv[] )
   FixedImageReaderType::Pointer  fixedImageReader  = FixedImageReaderType::New();
   MovingImageReaderType::Pointer movingImageReader = MovingImageReaderType::New();
 
-  fixedImageReader->SetFileName(  argv[1] );
-  movingImageReader->SetFileName( argv[2] );
+  for (int imageIndex=1; imageIndex<numOfImages; imageIndex++) {
 
-  FixedImageType::ConstPointer fixedImage = fixedImageReader->GetOutput();
+	  fixedImageReader->SetFileName(  argv[2] );
+	  movingImageReader->SetFileName( argv[2+imageIndex] );
 
-  registration->SetFixedImage(  fixedImage   );
-  registration->SetMovingImage(   movingImageReader->GetOutput()   );
+	  std::string movedImageName = "./" + to_string(imageIndex+1) + "_to_1.nii.gz";
+	  std::cout << "Moved Image Name: " << movedImageName << std::endl;
 
-  fixedImageReader->Update();
+	  FixedImageType::ConstPointer fixedImage = fixedImageReader->GetOutput();
 
-  //  Software Guide : BeginLatex
-  //
-  //  The transform object is constructed, initialized like previous examples
-  //  and passed to the registration method.
-  //
-  //  \index{itk::ImageRegistrationMethodv4!SetInitialTransform()}
-  //  \index{itk::ImageRegistrationMethodv4!InPlaceOn()}
-  //
-  //  Software Guide : EndLatex
+	  registration->SetFixedImage(  fixedImage   );
+	  registration->SetMovingImage(   movingImageReader->GetOutput()   );
 
-  // Software Guide : BeginCodeSnippet
-  TransformType::Pointer  outputBSplineTransform = TransformType::New();
-  // Software Guide : EndCodeSnippet
+	  fixedImageReader->Update();
 
-  // Initialize the transform
-  typedef itk::BSplineTransformInitializer< TransformType,
-                                            FixedImageType>      InitializerType;
+	  //  Software Guide : BeginLatex
+	  //
+	  //  The transform object is constructed, initialized like previous examples
+	  //  and passed to the registration method.
+	  //
+	  //  \index{itk::ImageRegistrationMethodv4!SetInitialTransform()}
+	  //  \index{itk::ImageRegistrationMethodv4!InPlaceOn()}
+	  //
+	  //  Software Guide : EndLatex
 
-  InitializerType::Pointer transformInitializer = InitializerType::New();
+	  // Software Guide : BeginCodeSnippet
+	  TransformType::Pointer  outputBSplineTransform = TransformType::New();
+	  // Software Guide : EndCodeSnippet
 
-  //unsigned int numberOfGridNodesInOneDimension = 8;
+	  // Initialize the transform
+	  typedef itk::BSplineTransformInitializer< TransformType,
+												FixedImageType>      InitializerType;
 
-  TransformType::MeshSizeType             meshSize;
-  meshSize.SetElement(0, 20);
-  meshSize.SetElement(1, 20);
-  meshSize.SetElement(2, 16);
-  //meshSize.Fill( numberOfGridNodesInOneDimension - SplineOrder );
+	  InitializerType::Pointer transformInitializer = InitializerType::New();
 
-  transformInitializer->SetTransform( outputBSplineTransform );
-  transformInitializer->SetImage( fixedImage );
-  transformInitializer->SetTransformDomainMeshSize( meshSize );
-  transformInitializer->InitializeTransform();
+	  //unsigned int numberOfGridNodesInOneDimension = 8;
 
-  // Set transform to identity
-  typedef TransformType::ParametersType     ParametersType;
-  const unsigned int numberOfParameters =
-               outputBSplineTransform->GetNumberOfParameters();
-  ParametersType parameters( numberOfParameters );
-  parameters.Fill( 0.0 );
-  outputBSplineTransform->SetParameters( parameters );
-  TransformType::Pointer  identityBSplineTransform = outputBSplineTransform->Clone();
+	  TransformType::MeshSizeType             meshSize;
+	  meshSize.SetElement(0, 20);
+	  meshSize.SetElement(1, 20);
+	  meshSize.SetElement(2, 16);
+	  //meshSize.Fill( numberOfGridNodesInOneDimension - SplineOrder );
 
-  // Software Guide : BeginCodeSnippet
-  registration->SetInitialTransform( outputBSplineTransform );
-  registration->InPlaceOn();
-  // Software Guide : EndCodeSnippet
+	  transformInitializer->SetTransform( outputBSplineTransform );
+	  transformInitializer->SetImage( fixedImage );
+	  transformInitializer->SetTransformDomainMeshSize( meshSize );
+	  transformInitializer->InitializeTransform();
 
-  //  A single level registration process is run using
-  //  the shrink factor 1 and smoothing sigma 0.
-  //
-  const unsigned int numberOfLevels = 1;
+	  // Set transform to identity
+	  typedef TransformType::ParametersType     ParametersType;
+	  const unsigned int numberOfParameters =
+				   outputBSplineTransform->GetNumberOfParameters();
+	  ParametersType parameters( numberOfParameters );
+	  parameters.Fill( 0.0 );
+	  outputBSplineTransform->SetParameters( parameters );
+	  TransformType::Pointer  identityBSplineTransform = outputBSplineTransform->Clone();
 
-  RegistrationType::ShrinkFactorsArrayType shrinkFactorsPerLevel;
-  shrinkFactorsPerLevel.SetSize( numberOfLevels );
-  shrinkFactorsPerLevel[0] = 1;
+	  // Software Guide : BeginCodeSnippet
+	  registration->SetInitialTransform( outputBSplineTransform );
+	  registration->InPlaceOn();
+	  // Software Guide : EndCodeSnippet
 
-  RegistrationType::SmoothingSigmasArrayType smoothingSigmasPerLevel;
-  smoothingSigmasPerLevel.SetSize( numberOfLevels );
-  smoothingSigmasPerLevel[0] = 0;
+	  //  A single level registration process is run using
+	  //  the shrink factor 1 and smoothing sigma 0.
+	  //
+	  const unsigned int numberOfLevels = 1;
 
-  registration->SetNumberOfLevels( numberOfLevels );
-  registration->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
-  registration->SetShrinkFactorsPerLevel( shrinkFactorsPerLevel );
+	  RegistrationType::ShrinkFactorsArrayType shrinkFactorsPerLevel;
+	  shrinkFactorsPerLevel.SetSize( numberOfLevels );
+	  shrinkFactorsPerLevel[0] = 1;
 
-  //  Software Guide : BeginLatex
-  //
-  //  Next we set the parameters of the LBFGSB Optimizer. Note that
-  //  this optimizer does not support scales estimator and sets all
-  //  the parameters scales to one.
-  //  Also, we should set the boundary condition for each variable, where
-  //  \code{boundSelect[i]} can be set as: \code{UNBOUNDED},
-  //  \code{LOWERBOUNDED}, \code{BOTHBOUNDED}, \code{UPPERBOUNDED}.
-  //
-  //  Software Guide : EndLatex
+	  RegistrationType::SmoothingSigmasArrayType smoothingSigmasPerLevel;
+	  smoothingSigmasPerLevel.SetSize( numberOfLevels );
+	  smoothingSigmasPerLevel[0] = 0;
 
-  // Software Guide : BeginCodeSnippet
-  const unsigned int numParameters =
-    outputBSplineTransform->GetNumberOfParameters();
-  OptimizerType::BoundSelectionType boundSelect( numParameters );
-  OptimizerType::BoundValueType upperBound( numParameters );
-  OptimizerType::BoundValueType lowerBound( numParameters );
+	  registration->SetNumberOfLevels( numberOfLevels );
+	  registration->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
+	  registration->SetShrinkFactorsPerLevel( shrinkFactorsPerLevel );
 
-  boundSelect.Fill( OptimizerType::UNBOUNDED );
-  upperBound.Fill( 0.0 );
-  lowerBound.Fill( 0.0 );
+	  //  Software Guide : BeginLatex
+	  //
+	  //  Next we set the parameters of the LBFGSB Optimizer. Note that
+	  //  this optimizer does not support scales estimator and sets all
+	  //  the parameters scales to one.
+	  //  Also, we should set the boundary condition for each variable, where
+	  //  \code{boundSelect[i]} can be set as: \code{UNBOUNDED},
+	  //  \code{LOWERBOUNDED}, \code{BOTHBOUNDED}, \code{UPPERBOUNDED}.
+	  //
+	  //  Software Guide : EndLatex
 
-  optimizer->SetBoundSelection( boundSelect );
-  optimizer->SetUpperBound( upperBound );
-  optimizer->SetLowerBound( lowerBound );
-  optimizer->TraceOn();
-  optimizer->SetCostFunctionConvergenceFactor( 1e+7 );
-  optimizer->SetGradientConvergenceTolerance( 1.0e-35 );
-  optimizer->SetNumberOfIterations( 500 );
-  optimizer->SetMaximumNumberOfFunctionEvaluations( 500 );
-  optimizer->SetMaximumNumberOfCorrections( 5 );
-  std::cout << "Number of Threads: " << optimizer->GetNumberOfThreads() << std::endl;
-  optimizer->SetInitialPosition(outputBSplineTransform->GetParameters());
-  std::cout << "Initialization: " << optimizer->GetCurrentMetricValue() << std::endl;
-  // Software Guide : EndCodeSnippet
+	  // Software Guide : BeginCodeSnippet
+	  const unsigned int numParameters =
+		outputBSplineTransform->GetNumberOfParameters();
+	  OptimizerType::BoundSelectionType boundSelect( numParameters );
+	  OptimizerType::BoundValueType upperBound( numParameters );
+	  OptimizerType::BoundValueType lowerBound( numParameters );
 
-  // Create the Command observer and register it with the optimizer.
-  //
-  CommandIterationUpdate::Pointer observer = CommandIterationUpdate::New();
-  optimizer->AddObserver( itk::IterationEvent(), observer );
+	  boundSelect.Fill( OptimizerType::UNBOUNDED );
+	  upperBound.Fill( 0.0 );
+	  lowerBound.Fill( 0.0 );
 
+	  optimizer->SetBoundSelection( boundSelect );
+	  optimizer->SetUpperBound( upperBound );
+	  optimizer->SetLowerBound( lowerBound );
+	  optimizer->TraceOn();
+	  optimizer->SetCostFunctionConvergenceFactor( 1e+7 );
+	  optimizer->SetGradientConvergenceTolerance( 1.0e-35 );
+	  optimizer->SetNumberOfIterations( 500 );
+	  optimizer->SetMaximumNumberOfFunctionEvaluations( 500 );
+	  optimizer->SetMaximumNumberOfCorrections( 5 );
+	  std::cout << "Number of Threads: " << optimizer->GetNumberOfThreads() << std::endl;
+	  optimizer->SetInitialPosition(outputBSplineTransform->GetParameters());
+	  std::cout << "Initialization: " << optimizer->GetCurrentMetricValue() << std::endl;
+	  // Software Guide : EndCodeSnippet
 
-  // Add time and memory probes
-  itk::TimeProbesCollectorBase chronometer;
-  itk::MemoryProbesCollectorBase memorymeter;
-
-  std::cout << std::endl << "Starting Registration" << std::endl;
-
-  try
-    {
-    memorymeter.Start( "Registration" );
-    chronometer.Start( "Registration" );
-
-    registration->Update();
-
-    chronometer.Stop( "Registration" );
-    memorymeter.Stop( "Registration" );
-
-    std::cout << "Optimizer stop condition = "
-              << registration->GetOptimizer()->GetStopConditionDescription()
-              << std::endl;
-    }
-  catch( itk::ExceptionObject & err )
-    {
-    std::cerr << "ExceptionObject caught !" << std::endl;
-    std::cerr << err << std::endl;
-    return EXIT_FAILURE;
-    }
-
-  // Report the time and memory taken by the registration
-  //chronometer.Report( std::cout );
-  //memorymeter.Report( std::cout );
-
-  //  Software Guide : BeginLatex
-  //
-  //  Let's execute this example using the rat lung images from the previous examples.
-  //
-  // \begin{itemize}
-  // \item \code{RatLungSlice1.mha}
-  // \item \code{RatLungSlice2.mha}
-  // \end{itemize}
-  //
-  //  The \emph{transform} object is updated during the registration process
-  //  and is passed to the resampler to map the moving image space onto the
-  //  fixed image space.
-  //
-  //  Software Guide : EndLatex
-
-  // Software Guide : BeginCodeSnippet
-  OptimizerType::ParametersType finalParameters = outputBSplineTransform->GetParameters();
-  // Software Guide : EndCodeSnippet
-
-  std::cout << "Last Transform Parameters" << std::endl;
-  //std::cout << finalParameters << std::endl;
-
-  // Finally we use the last transform in order to resample the image.
-  //
-  typedef itk::ResampleImageFilter<
-                            MovingImageType,
-                            FixedImageType >    ResampleFilterType;
-
-  ResampleFilterType::Pointer resample = ResampleFilterType::New();
-
-  resample->SetTransform( outputBSplineTransform );
-  resample->SetInput( movingImageReader->GetOutput() );
-
-  resample->SetSize(    fixedImage->GetLargestPossibleRegion().GetSize() );
-  resample->SetOutputOrigin(  fixedImage->GetOrigin() );
-  resample->SetOutputSpacing( fixedImage->GetSpacing() );
-  resample->SetOutputDirection( fixedImage->GetDirection() );
-  resample->SetDefaultPixelValue( 0 );
-
-  //typedef  unsigned char  OutputPixelType;
-  typedef PixelType OutputPixelType;
-  typedef itk::Image< OutputPixelType, ImageDimension > OutputImageType;
-
-  typedef itk::CastImageFilter<
-                        FixedImageType,
-                        OutputImageType > CastFilterType;
-
-  typedef itk::ImageFileWriter< OutputImageType >  WriterType;
+	  // Create the Command observer and register it with the optimizer.
+	  //
+	  CommandIterationUpdate::Pointer observer = CommandIterationUpdate::New();
+	  optimizer->AddObserver( itk::IterationEvent(), observer );
 
 
-  WriterType::Pointer      writer =  WriterType::New();
-  CastFilterType::Pointer  caster =  CastFilterType::New();
+	  // Add time and memory probes
+	  itk::TimeProbesCollectorBase chronometer;
+	  itk::MemoryProbesCollectorBase memorymeter;
+
+	  std::cout << std::endl << "Starting Registration" << std::endl;
+
+	  try
+		{
+		memorymeter.Start( "Registration" );
+		chronometer.Start( "Registration" );
+
+		registration->Update();
+
+		chronometer.Stop( "Registration" );
+		memorymeter.Stop( "Registration" );
+
+		std::cout << "Optimizer stop condition = "
+				  << registration->GetOptimizer()->GetStopConditionDescription()
+				  << std::endl;
+		}
+	  catch( itk::ExceptionObject & err )
+		{
+		std::cerr << "ExceptionObject caught !" << std::endl;
+		std::cerr << err << std::endl;
+		return EXIT_FAILURE;
+		}
+
+	  // Report the time and memory taken by the registration
+	  //chronometer.Report( std::cout );
+	  //memorymeter.Report( std::cout );
+
+	  //  Software Guide : BeginLatex
+	  //
+	  //  Let's execute this example using the rat lung images from the previous examples.
+	  //
+	  // \begin{itemize}
+	  // \item \code{RatLungSlice1.mha}
+	  // \item \code{RatLungSlice2.mha}
+	  // \end{itemize}
+	  //
+	  //  The \emph{transform} object is updated during the registration process
+	  //  and is passed to the resampler to map the moving image space onto the
+	  //  fixed image space.
+	  //
+	  //  Software Guide : EndLatex
+
+	  // Software Guide : BeginCodeSnippet
+	  OptimizerType::ParametersType finalParameters = outputBSplineTransform->GetParameters();
+	  // Software Guide : EndCodeSnippet
+
+	  std::cout << "Last Transform Parameters" << std::endl;
+	  //std::cout << finalParameters << std::endl;
+
+	  // Finally we use the last transform in order to resample the image.
+	  //
+	  typedef itk::ResampleImageFilter<
+								MovingImageType,
+								FixedImageType >    ResampleFilterType;
+
+	  ResampleFilterType::Pointer resample = ResampleFilterType::New();
+
+	  resample->SetTransform( outputBSplineTransform );
+	  resample->SetInput( movingImageReader->GetOutput() );
+
+	  resample->SetSize(    fixedImage->GetLargestPossibleRegion().GetSize() );
+	  resample->SetOutputOrigin(  fixedImage->GetOrigin() );
+	  resample->SetOutputSpacing( fixedImage->GetSpacing() );
+	  resample->SetOutputDirection( fixedImage->GetDirection() );
+	  resample->SetDefaultPixelValue( 0 );
+
+	  //typedef  unsigned char  OutputPixelType;
+	  typedef PixelType OutputPixelType;
+	  typedef itk::Image< OutputPixelType, ImageDimension > OutputImageType;
+
+	  typedef itk::CastImageFilter<
+							FixedImageType,
+							OutputImageType > CastFilterType;
+
+	  typedef itk::ImageFileWriter< OutputImageType >  WriterType;
 
 
-  writer->SetFileName( argv[3] );
+	  WriterType::Pointer      writer =  WriterType::New();
+	  CastFilterType::Pointer  caster =  CastFilterType::New();
 
 
-  caster->SetInput( resample->GetOutput() );
-  writer->SetInput( caster->GetOutput()   );
-
-  try
-    {
-    writer->Update();
-    }
-  catch( itk::ExceptionObject & err )
-    {
-    std::cerr << "ExceptionObject caught !" << std::endl;
-    std::cerr << err << std::endl;
-    return EXIT_FAILURE;
-    }
-
-  typedef itk::SquaredDifferenceImageFilter<
-                                  FixedImageType,
-                                  FixedImageType,
-                                  OutputImageType > DifferenceFilterType;
-
-  DifferenceFilterType::Pointer difference = DifferenceFilterType::New();
-
-  WriterType::Pointer writer2 = WriterType::New();
-  writer2->SetInput( difference->GetOutput() );
-
-  // Compute the difference image between the
-  // fixed and resampled moving image.
-  if( argc >= 5 )
-    {
-    difference->SetInput1( fixedImageReader->GetOutput() );
-    difference->SetInput2( resample->GetOutput() );
-    writer2->SetFileName( argv[4] );
-    try
-      {
-      writer2->Update();
-      }
-    catch( itk::ExceptionObject & err )
-      {
-      std::cerr << "ExceptionObject caught !" << std::endl;
-      std::cerr << err << std::endl;
-      return EXIT_FAILURE;
-      }
-    }
+	  writer->SetFileName( argv[4] );
 
 
-  // Compute the difference image between the
-  // fixed and moving image before registration.
-  if( argc >= 6 )
-    {
-    writer2->SetFileName( argv[5] );
-    difference->SetInput1( fixedImageReader->GetOutput() );
-    difference->SetInput2( movingImageReader->GetOutput() );
-    try
-      {
-      writer2->Update();
-      }
-    catch( itk::ExceptionObject & err )
-      {
-      std::cerr << "ExceptionObject caught !" << std::endl;
-      std::cerr << err << std::endl;
-      return EXIT_FAILURE;
-      }
-    }
+	  caster->SetInput( resample->GetOutput() );
+	  writer->SetInput( caster->GetOutput()   );
 
-  // Generate the explicit deformation field resulting from
-  // the registration.
-  typedef itk::Vector< float, ImageDimension >          VectorPixelType;
-  typedef itk::Image< VectorPixelType, ImageDimension > DisplacementFieldImageType;
+	  try
+		{
+		writer->Update();
+		}
+	  catch( itk::ExceptionObject & err )
+		{
+		std::cerr << "ExceptionObject caught !" << std::endl;
+		std::cerr << err << std::endl;
+		return EXIT_FAILURE;
+		}
 
-  typedef itk::TransformToDisplacementFieldFilter<
-                        DisplacementFieldImageType,
-                        CoordinateRepType >             DisplacementFieldGeneratorType;
+	  // Generate the explicit deformation field resulting from
+	  // the registration.
+	  typedef itk::Vector< float, ImageDimension >          VectorPixelType;
+	  typedef itk::Image< VectorPixelType, ImageDimension > DisplacementFieldImageType;
 
-  /** Create an setup displacement field generator. */
-  DisplacementFieldGeneratorType::Pointer dispfieldGenerator =
-                                                 DisplacementFieldGeneratorType::New();
-  dispfieldGenerator->UseReferenceImageOn();
-  dispfieldGenerator->SetReferenceImage( fixedImage );
-  dispfieldGenerator->SetTransform( outputBSplineTransform );
-  try
-    {
-    dispfieldGenerator->Update();
-    }
-  catch ( itk::ExceptionObject & err )
-    {
-    std::cerr << "Exception detected while generating deformation field";
-    std::cerr << " : "  << err << std::endl;
-    return EXIT_FAILURE;
-    }
+	  typedef itk::TransformToDisplacementFieldFilter<
+							DisplacementFieldImageType,
+							CoordinateRepType >             DisplacementFieldGeneratorType;
 
-  typedef itk::ImageFileWriter< DisplacementFieldImageType >  FieldWriterType;
-  FieldWriterType::Pointer fieldWriter = FieldWriterType::New();
+	  /** Create an setup displacement field generator. */
+	  DisplacementFieldGeneratorType::Pointer dispfieldGenerator =
+													 DisplacementFieldGeneratorType::New();
+	  dispfieldGenerator->UseReferenceImageOn();
+	  dispfieldGenerator->SetReferenceImage( fixedImage );
+	  dispfieldGenerator->SetTransform( outputBSplineTransform );
+	  try
+		{
+		dispfieldGenerator->Update();
+		}
+	  catch ( itk::ExceptionObject & err )
+		{
+		std::cerr << "Exception detected while generating deformation field";
+		std::cerr << " : "  << err << std::endl;
+		return EXIT_FAILURE;
+		}
 
-  fieldWriter->SetInput( dispfieldGenerator->GetOutput() );
+	  typedef itk::ImageFileWriter< DisplacementFieldImageType >  FieldWriterType;
+	  FieldWriterType::Pointer fieldWriter = FieldWriterType::New();
 
-  if( argc >= 7 )
-    {
-    fieldWriter->SetFileName( argv[6] );
-    try
-      {
-      fieldWriter->Update();
-      }
-    catch( itk::ExceptionObject & excp )
-      {
-      std::cerr << "Exception thrown " << std::endl;
-      std::cerr << excp << std::endl;
-      return EXIT_FAILURE;
-      }
-    }
+	  fieldWriter->SetInput( dispfieldGenerator->GetOutput() );
+	  fieldWriter->SetFileName( argv[5] );
+	  try
+	    {
+		fieldWriter->Update();
+	    }
+	  catch( itk::ExceptionObject & excp )
+	    {
+		std::cerr << "Exception thrown " << std::endl;
+		std::cerr << excp << std::endl;
+		return EXIT_FAILURE;
+	    }
+
+  }
 
   return EXIT_SUCCESS;
 }
