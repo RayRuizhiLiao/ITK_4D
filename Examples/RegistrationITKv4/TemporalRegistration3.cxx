@@ -213,9 +213,9 @@ int main( int argc, char *argv[] )
 	  fixedImageReader->SetFileName(  argv[2] );
 	  movingImageReader->SetFileName( argv[2+imageIndex] );
 
-	  std::string movedImageName = "./" + to_string(imageIndex+1) + "_to_1.nii.gz";
+	  std::string movedImageName = "./numberOfCorrection_20/" + to_string(imageIndex+1) + "_to_1.nii.gz";
 	  std::cout << "Moved Image Name: " << movedImageName << std::endl;
-	  std::string warpFieldName = "./" + to_string(imageIndex+1) + "_to_1_warp.nii.gz";
+	  std::string warpFieldName = "./numberOfCorrection_20/" + to_string(imageIndex+1) + "_to_1_warp.nii.gz";
 	  std::cout << "Warp Image Name: " << warpFieldName << std::endl;
 
 	  FixedImageType::ConstPointer fixedImage = fixedImageReader->GetOutput();
@@ -319,7 +319,7 @@ int main( int argc, char *argv[] )
 	  optimizer->SetGradientConvergenceTolerance( 1.0e-35 );
 	  optimizer->SetNumberOfIterations( 500 );
 	  optimizer->SetMaximumNumberOfFunctionEvaluations( 500 );
-	  optimizer->SetMaximumNumberOfCorrections( 5 );
+	  optimizer->SetMaximumNumberOfCorrections( 20 );
 	  std::cout << "Number of Threads: " << optimizer->GetNumberOfThreads() << std::endl;
 	  if (imageIndex==1) {
 		  optimizer->SetInitialPosition(outputBSplineTransform->GetParameters());

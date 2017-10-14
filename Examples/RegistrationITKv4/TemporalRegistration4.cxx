@@ -213,9 +213,9 @@ int main( int argc, char *argv[] )
 	  fixedImageReader->SetFileName(  argv[2] );
 	  movingImageReader->SetFileName( argv[2+imageIndex] );
 
-	  std::string movedImageName = "./" + to_string(imageIndex+1) + "_to_1.nii.gz";
+	  std::string movedImageName = "./gradientConvergenceTolerance_1e-10/" + to_string(imageIndex+1) + "_to_1.nii.gz";
 	  std::cout << "Moved Image Name: " << movedImageName << std::endl;
-	  std::string warpFieldName = "./" + to_string(imageIndex+1) + "_to_1_warp.nii.gz";
+	  std::string warpFieldName = "./gradientConvergenceTolerance_1e-10/" + to_string(imageIndex+1) + "_to_1_warp.nii.gz";
 	  std::cout << "Warp Image Name: " << warpFieldName << std::endl;
 
 	  FixedImageType::ConstPointer fixedImage = fixedImageReader->GetOutput();
@@ -316,7 +316,7 @@ int main( int argc, char *argv[] )
 	  optimizer->SetLowerBound( lowerBound );
 	  optimizer->TraceOn();
 	  optimizer->SetCostFunctionConvergenceFactor( 1e+7 );
-	  optimizer->SetGradientConvergenceTolerance( 1.0e-35 );
+	  optimizer->SetGradientConvergenceTolerance( 1.0e-10 );
 	  optimizer->SetNumberOfIterations( 500 );
 	  optimizer->SetMaximumNumberOfFunctionEvaluations( 500 );
 	  optimizer->SetMaximumNumberOfCorrections( 5 );
