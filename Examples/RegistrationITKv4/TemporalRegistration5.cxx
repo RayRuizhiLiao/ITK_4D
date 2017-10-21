@@ -53,7 +53,7 @@
 
 // Software Guide : BeginCodeSnippet
 #include "itkBSplineTransform.h"
-#include "itkLBFGSOptimizerv4.h"
+#include "itkLBFGSBOptimizerv4.h"
 // Software Guide : EndCodeSnippet
 
 //  Software Guide : BeginLatex
@@ -99,7 +99,7 @@ protected:
   CommandIterationUpdate() {};
 
 public:
-  typedef itk::LBFGSOptimizerv4     OptimizerType;
+  typedef itk::LBFGSBOptimizerv4     OptimizerType;
   typedef   const OptimizerType *    OptimizerPointer;
 
   void Execute(itk::Object *caller, const itk::EventObject & event) ITK_OVERRIDE
@@ -116,7 +116,7 @@ public:
     }
   std::cout << optimizer->GetCurrentIteration() << "   ";
   std::cout << optimizer->GetCurrentMetricValue() << "   ";
-  std::cout << optimizer->GetWeights() << std::endl;
+  std::cout << optimizer->GetInfinityNormOfProjectedGradient() << std::endl;
   }
 };
 
@@ -171,7 +171,7 @@ int main( int argc, char *argv[] )
   // Software Guide : EndCodeSnippet
 
 
-  typedef itk::LBFGSOptimizerv4     OptimizerType;
+  typedef itk::LBFGSBOptimizerv4       OptimizerType;
 
 
   //typedef itk::MeanSquaresImageToImageMetricv4<
@@ -195,7 +195,7 @@ int main( int argc, char *argv[] )
   registration->SetOptimizer(     optimizer     );
 
   int numOfImages  = 0;
-  std::sscanf(argv[1], "%d", &numOfImages);
+  std::sscanf(argv[2], "%d", &numOfImages);
   std::cout << "There are " << numOfImages << " images in the given series!" << std::endl;
 
 
@@ -207,15 +207,22 @@ int main( int argc, char *argv[] )
 
   OptimizerType::ParametersType transformParameters;
 
+  std::string outputFolder(argv[1]);
 
   for (int imageIndex=1; imageIndex<numOfImages; imageIndex++) {
 
-	  fixedImageReader->SetFileName(  argv[2] );
-	  movingImageReader->SetFileName( argv[2+imageIndex] );
+	  fixedImageReader->SetFileName(  argv[3] );
+	  movingImageReader->SetFileName( argv[3+imageIndex] );
 
-	  std::string movedImageName = "./LBFGSOptimizerv4/" + to_string(imageIndex+1) + "_to_1.nii.gz";
+	  std::string fixedImageName(argv[3]);
+	  std::string slash = "/";
+	  std::size_t fixedSlashIndex = fixedImageName.find(slash, fixedImageName.length()-25);
+	  std::string movingImageName(argv[3+imageIndex]);
+	  std::size_t movingSlashIndex = movingImageName.find(slash, movingImageName.length()-25);
+
+	  std::string movedImageName = outputFolder + movingImageName.substr(movingSlashIndex+1, movingImageName.length()-movingSlashIndex-8) + "_to_" + fixedImageName.substr(fixedSlashIndex+1, fixedImageName.length()-fixedSlashIndex-8) + ".nii.gz";
 	  std::cout << "Moved Image Name: " << movedImageName << std::endl;
-	  std::string warpFieldName = "./LBFGSOptimizerv4/" + to_string(imageIndex+1) + "_to_1_warp.nii.gz";
+	  std::string warpFieldName = outputFolder + movingImageName.substr(movingSlashIndex+1, movingImageName.length()-movingSlashIndex-8) + "_to_" + fixedImageName.substr(fixedSlashIndex+1, fixedImageName.length()-fixedSlashIndex-8) + "_warp.nii.gz";
 	  std::cout << "Warp Image Name: " << warpFieldName << std::endl;
 
 	  FixedImageType::ConstPointer fixedImage = fixedImageReader->GetOutput();
@@ -280,7 +287,6 @@ int main( int argc, char *argv[] )
 	  RegistrationType::ShrinkFactorsArrayType shrinkFactorsPerLevel;
 	  shrinkFactorsPerLevel.SetSize( numberOfLevels );
 	  shrinkFactorsPerLevel[0] = 1;
-
 	  RegistrationType::SmoothingSigmasArrayType smoothingSigmasPerLevel;
 	  smoothingSigmasPerLevel.SetSize( numberOfLevels );
 	  smoothingSigmasPerLevel[0] = 0;
@@ -301,31 +307,30 @@ int main( int argc, char *argv[] )
 	  //  Software Guide : EndLatex
 
 	  // Software Guide : BeginCodeSnippet
-	  //const unsigned int numParameters =
-	  //	outputBSplineTransform->GetNumberOfParameters();
-	  //OptimizerType::BoundSelectionType boundSelect( numParameters );
-	  //OptimizerType::BoundValueType upperBound( numParameters );
-	  //OptimizerType::BoundValueType lowerBound( numParameters );
+	  const unsigned int numParameters =
+		outputBSplineTransform->GetNumberOfParameters();
+	  OptimizerType::BoundSelectionType boundSelect( numParameters );
+	  OptimizerType::BoundValueType upperBound( numParameters );
+	  OptimizerType::BoundValueType lowerBound( numParameters );
 
-	  //boundSelect.Fill( OptimizerType::UNBOUNDED );
-	  //upperBound.Fill( 0.0 );
-	  //lowerBound.Fill( 0.0 );
+	  boundSelect.Fill( OptimizerType::UNBOUNDED );
+	  upperBound.Fill( 0.0 );
+	  lowerBound.Fill( 0.0 );
 
-	  //optimizer->SetBoundSelection( boundSelect );
-	  //optimizer->SetUpperBound( upperBound );
-	  //optimizer->SetLowerBound( lowerBound );
+	  optimizer->SetBoundSelection( boundSelect );
+	  optimizer->SetUpperBound( upperBound );
+	  optimizer->SetLowerBound( lowerBound );
 	  optimizer->TraceOn();
-	  //optimizer->SetCostFunctionConvergenceFactor( 1e+7 );
-	  optimizer->SetGradientConvergenceTolerance( 1.0e-5 );
-	  optimizer->SetNumberOfIterations( 500 );
-	  optimizer->SetMaximumNumberOfFunctionEvaluations( 500 );
-	  optimizer->SetLineSearchAccuracy(0.9);
-	  //optimizer->SetMaximumNumberOfCorrections( 5 );
+	  optimizer->SetCostFunctionConvergenceFactor( 1e+11 );
+	  optimizer->SetGradientConvergenceTolerance( 1.0e-10 );
+	  optimizer->SetNumberOfIterations( 30 );
+	  optimizer->SetMaximumNumberOfFunctionEvaluations( 50 );
+	  optimizer->SetMaximumNumberOfCorrections( 5 );
 	  std::cout << "Number of Threads: " << optimizer->GetNumberOfThreads() << std::endl;
 	  if (imageIndex==1) {
-		  //optimizer->SetInitialPosition(outputBSplineTransform->GetParameters());
+		  optimizer->SetInitialPosition(outputBSplineTransform->GetParameters());
 	  } else {
-		  //optimizer->SetInitialPosition(transformParameters);
+		  optimizer->SetInitialPosition(transformParameters);
 	  }
 	  //std::cout << "Initialization: " << optimizer->GetInitialPosition() << std::endl;
 	  // Software Guide : EndCodeSnippet

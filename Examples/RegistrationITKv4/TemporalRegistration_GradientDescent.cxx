@@ -53,7 +53,7 @@
 
 // Software Guide : BeginCodeSnippet
 #include "itkBSplineTransform.h"
-#include "itkLBFGSOptimizerv4.h"
+#include "itkRegularStepGradientDescentOptimizerv4.h"
 // Software Guide : EndCodeSnippet
 
 //  Software Guide : BeginLatex
@@ -99,7 +99,7 @@ protected:
   CommandIterationUpdate() {};
 
 public:
-  typedef itk::LBFGSOptimizerv4     OptimizerType;
+  typedef   itk::GradientDescentOptimizerv4Template<double>  OptimizerType;
   typedef   const OptimizerType *    OptimizerPointer;
 
   void Execute(itk::Object *caller, const itk::EventObject & event) ITK_OVERRIDE
@@ -116,7 +116,8 @@ public:
     }
   std::cout << optimizer->GetCurrentIteration() << "   ";
   std::cout << optimizer->GetCurrentMetricValue() << "   ";
-  std::cout << optimizer->GetWeights() << std::endl;
+  std::cout << optimizer->GetLearningRate() << std::endl;
+  //std::cout << optimizer->GetInfinityNormOfProjectedGradient() << std::endl;
   }
 };
 
@@ -171,7 +172,7 @@ int main( int argc, char *argv[] )
   // Software Guide : EndCodeSnippet
 
 
-  typedef itk::LBFGSOptimizerv4     OptimizerType;
+  typedef   itk::GradientDescentOptimizerv4Template<double>  OptimizerType;
 
 
   //typedef itk::MeanSquaresImageToImageMetricv4<
@@ -213,9 +214,9 @@ int main( int argc, char *argv[] )
 	  fixedImageReader->SetFileName(  argv[2] );
 	  movingImageReader->SetFileName( argv[2+imageIndex] );
 
-	  std::string movedImageName = "./LBFGSOptimizerv4/" + to_string(imageIndex+1) + "_to_1.nii.gz";
+	  std::string movedImageName = "./gradientDescent/" + to_string(imageIndex+1) + "_to_1.nii.gz";
 	  std::cout << "Moved Image Name: " << movedImageName << std::endl;
-	  std::string warpFieldName = "./LBFGSOptimizerv4/" + to_string(imageIndex+1) + "_to_1_warp.nii.gz";
+	  std::string warpFieldName = "./gradientDescent/" + to_string(imageIndex+1) + "_to_1_warp.nii.gz";
 	  std::cout << "Warp Image Name: " << warpFieldName << std::endl;
 
 	  FixedImageType::ConstPointer fixedImage = fixedImageReader->GetOutput();
@@ -302,31 +303,34 @@ int main( int argc, char *argv[] )
 
 	  // Software Guide : BeginCodeSnippet
 	  //const unsigned int numParameters =
-	  //	outputBSplineTransform->GetNumberOfParameters();
-	  //OptimizerType::BoundSelectionType boundSelect( numParameters );
-	  //OptimizerType::BoundValueType upperBound( numParameters );
-	  //OptimizerType::BoundValueType lowerBound( numParameters );
+		//outputBSplineTransform->GetNumberOfParameters();
+	  /*
+	  OptimizerType::BoundSelectionType boundSelect( numParameters );
+	  OptimizerType::BoundValueType upperBound( numParameters );
+	  OptimizerType::BoundValueType lowerBound( numParameters );
 
-	  //boundSelect.Fill( OptimizerType::UNBOUNDED );
-	  //upperBound.Fill( 0.0 );
-	  //lowerBound.Fill( 0.0 );
+	  boundSelect.Fill( OptimizerType::UNBOUNDED );
+	  upperBound.Fill( 0.0 );
+	  lowerBound.Fill( 0.0 );
 
-	  //optimizer->SetBoundSelection( boundSelect );
-	  //optimizer->SetUpperBound( upperBound );
-	  //optimizer->SetLowerBound( lowerBound );
+	  optimizer->SetBoundSelection( boundSelect );
+	  optimizer->SetUpperBound( upperBound );
+	  optimizer->SetLowerBound( lowerBound );
 	  optimizer->TraceOn();
-	  //optimizer->SetCostFunctionConvergenceFactor( 1e+7 );
-	  optimizer->SetGradientConvergenceTolerance( 1.0e-5 );
+	  optimizer->SetCostFunctionConvergenceFactor( 1e+7 );
+	  optimizer->SetGradientConvergenceTolerance( 1.0e-35 );
 	  optimizer->SetNumberOfIterations( 500 );
 	  optimizer->SetMaximumNumberOfFunctionEvaluations( 500 );
-	  optimizer->SetLineSearchAccuracy(0.9);
-	  //optimizer->SetMaximumNumberOfCorrections( 5 );
+	  optimizer->SetMaximumNumberOfCorrections( 5 );
 	  std::cout << "Number of Threads: " << optimizer->GetNumberOfThreads() << std::endl;
 	  if (imageIndex==1) {
-		  //optimizer->SetInitialPosition(outputBSplineTransform->GetParameters());
+		  optimizer->SetInitialPosition(outputBSplineTransform->GetParameters());
 	  } else {
-		  //optimizer->SetInitialPosition(transformParameters);
+		  optimizer->SetInitialPosition(transformParameters);
 	  }
+	  */
+	  optimizer->SetDoEstimateLearningRateAtEachIteration(true);
+
 	  //std::cout << "Initialization: " << optimizer->GetInitialPosition() << std::endl;
 	  // Software Guide : EndCodeSnippet
 
