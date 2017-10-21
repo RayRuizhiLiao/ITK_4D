@@ -15,8 +15,8 @@
  *  limitations under the License.
  *
  *=========================================================================*/
-#ifndef itkANTSNeighborhoodCorrelationImageToImageMetricv4_h
-#define itkANTSNeighborhoodCorrelationImageToImageMetricv4_h
+#ifndef itkANTSNeighborhoodCorrelationImageToImageTemporalMetricv4_h
+#define itkANTSNeighborhoodCorrelationImageToImageTemporalMetricv4_h
 
 #include "itkImageToImageMetricv4.h"
 #include "itkANTSNeighborhoodCorrelationImageToImageMetricv4GetValueAndDerivativeThreader.h"
@@ -94,13 +94,13 @@ template<typename TFixedImage, typename TMovingImage, typename TVirtualImage = T
           typename TInternalComputationValueType = double,
           typename TMetricTraits = DefaultImageToImageMetricTraitsv4<TFixedImage,TMovingImage,TVirtualImage,TInternalComputationValueType>
           >
-class ITK_TEMPLATE_EXPORT ANTSNeighborhoodCorrelationImageToImageMetricv4 :
+class ITK_TEMPLATE_EXPORT ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4 :
   public ImageToImageMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
 {
 public:
 
   /** Standard class typedefs. */
-  typedef ANTSNeighborhoodCorrelationImageToImageMetricv4                  Self;
+  typedef ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4                  Self;
   typedef ImageToImageMetricv4<TFixedImage, TMovingImage, TVirtualImage,
                              TInternalComputationValueType,TMetricTraits>  Superclass;
   typedef SmartPointer<Self>                                               Pointer;
@@ -171,8 +171,8 @@ public:
   void Initialize(void) throw ( itk::ExceptionObject ) ITK_OVERRIDE;
 
 protected:
-  ANTSNeighborhoodCorrelationImageToImageMetricv4();
-  virtual ~ANTSNeighborhoodCorrelationImageToImageMetricv4();
+  ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4();
+  virtual ~ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4();
 
   friend class ANTSNeighborhoodCorrelationImageToImageMetricv4GetValueAndDerivativeThreader< ThreadedImageRegionPartitioner< VirtualImageDimension >, Superclass, Self >;
   typedef ANTSNeighborhoodCorrelationImageToImageMetricv4GetValueAndDerivativeThreader< ThreadedImageRegionPartitioner< VirtualImageDimension >, Superclass, Self >
@@ -185,7 +185,7 @@ protected:
   virtual void PrintSelf(std::ostream & os, Indent indent) const ITK_OVERRIDE;
 
 private:
-  ITK_DISALLOW_COPY_AND_ASSIGN(ANTSNeighborhoodCorrelationImageToImageMetricv4);
+  ITK_DISALLOW_COPY_AND_ASSIGN(ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4);
 
   // Radius of the neighborhood window centered at each pixel
   RadiusType m_Radius;
@@ -194,7 +194,7 @@ private:
 } // end namespace itk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "itkANTSNeighborhoodCorrelationImageToImageMetricv4.hxx"
+#include "itkANTSNeighborhoodCorrelationImageToImageTemporalMetricv4.hxx"
 #endif
 
 #endif

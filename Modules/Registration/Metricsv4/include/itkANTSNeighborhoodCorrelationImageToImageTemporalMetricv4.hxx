@@ -15,18 +15,18 @@
  *  limitations under the License.
  *
  *=========================================================================*/
-#ifndef itkANTSNeighborhoodCorrelationImageToImageMetricv4_hxx
-#define itkANTSNeighborhoodCorrelationImageToImageMetricv4_hxx
+#ifndef itkANTSNeighborhoodCorrelationImageToImageTemporalMetricv4_hxx
+#define itkANTSNeighborhoodCorrelationImageToImageTemporalMetricv4_hxx
 
-#include "itkANTSNeighborhoodCorrelationImageToImageMetricv4.h"
+#include "itkANTSNeighborhoodCorrelationImageToImageTemporalMetricv4.h"
 #include "itkNumericTraits.h"
 
 namespace itk
 {
 
 template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
-ANTSNeighborhoodCorrelationImageToImageMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
-::ANTSNeighborhoodCorrelationImageToImageMetricv4()
+ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
+::ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4()
 {
   // initialize radius. note that a radius of 1 can be unstable
   typedef typename RadiusType::SizeValueType RadiusValueType;
@@ -38,14 +38,14 @@ ANTSNeighborhoodCorrelationImageToImageMetricv4<TFixedImage, TMovingImage, TVirt
 }
 
 template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
-ANTSNeighborhoodCorrelationImageToImageMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
-::~ANTSNeighborhoodCorrelationImageToImageMetricv4()
+ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
+::~ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4()
 {
 }
 
 template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
 void
-ANTSNeighborhoodCorrelationImageToImageMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
+ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
 ::Initialize(void) throw ( itk::ExceptionObject )
 {
   Superclass::Initialize();
@@ -53,7 +53,7 @@ ANTSNeighborhoodCorrelationImageToImageMetricv4<TFixedImage, TMovingImage, TVirt
 
 template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
 void
-ANTSNeighborhoodCorrelationImageToImageMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
+ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
 ::PrintSelf(std::ostream & os, Indent indent) const
 {
   Superclass::PrintSelf(os, indent);

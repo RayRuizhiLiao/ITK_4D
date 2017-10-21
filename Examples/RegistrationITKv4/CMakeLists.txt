@@ -1,8 +1,8 @@
 project(ITKv4ImageRegistration)
 
 
-add_executable(TemporalRegistration5   TemporalRegistration5.cxx )
-target_link_libraries(TemporalRegistration5 ${ITK_LIBRARIES})
+add_executable(TemporalRegistration5_newMetric   TemporalRegistration5_newMetric.cxx )
+target_link_libraries(TemporalRegistration5_newMetric ${ITK_LIBRARIES})
 
 if(BUILD_TESTING)
   add_subdirectory(test)
