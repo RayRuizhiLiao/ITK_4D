@@ -19,7 +19,7 @@
 #define itkANTSNeighborhoodCorrelationImageToImageTemporalMetricv4_h
 
 #include "itkImageToImageMetricv4.h"
-#include "itkANTSNeighborhoodCorrelationImageToImageMetricv4GetValueAndDerivativeThreader.h"
+#include "itkANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThreader.h"
 
 namespace itk {
 
@@ -174,13 +174,13 @@ protected:
   ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4();
   virtual ~ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4();
 
-  friend class ANTSNeighborhoodCorrelationImageToImageMetricv4GetValueAndDerivativeThreader< ThreadedImageRegionPartitioner< VirtualImageDimension >, Superclass, Self >;
-  typedef ANTSNeighborhoodCorrelationImageToImageMetricv4GetValueAndDerivativeThreader< ThreadedImageRegionPartitioner< VirtualImageDimension >, Superclass, Self >
-    ANTSNeighborhoodCorrelationImageToImageMetricv4DenseGetValueAndDerivativeThreaderType;
+  friend class ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThreader< ThreadedImageRegionPartitioner< VirtualImageDimension >, Superclass, Self >;
+  typedef ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThreader< ThreadedImageRegionPartitioner< VirtualImageDimension >, Superclass, Self >
+    ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4DenseGetValueAndDerivativeThreaderType;
 
-  friend class ANTSNeighborhoodCorrelationImageToImageMetricv4GetValueAndDerivativeThreader< ThreadedIndexedContainerPartitioner, Superclass, Self >;
-  typedef ANTSNeighborhoodCorrelationImageToImageMetricv4GetValueAndDerivativeThreader< ThreadedIndexedContainerPartitioner, Superclass, Self >
-    ANTSNeighborhoodCorrelationImageToImageMetricv4SparseGetValueAndDerivativeThreaderType;
+  friend class ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThreader< ThreadedIndexedContainerPartitioner, Superclass, Self >;
+  typedef ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThreader< ThreadedIndexedContainerPartitioner, Superclass, Self >
+    ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4SparseGetValueAndDerivativeThreaderType;
 
   virtual void PrintSelf(std::ostream & os, Indent indent) const ITK_OVERRIDE;
 

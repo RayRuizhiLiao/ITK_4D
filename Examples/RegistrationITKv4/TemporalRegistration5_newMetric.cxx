@@ -326,6 +326,9 @@ int main( int argc, char *argv[] )
 	  optimizer->SetNumberOfIterations( 30 );
 	  optimizer->SetMaximumNumberOfFunctionEvaluations( 50 );
 	  optimizer->SetMaximumNumberOfCorrections( 5 );
+	  optimizer->SetNumberOfThreads(1);
+	  registration->SetNumberOfThreads(1);
+	  metric->SetMaximumNumberOfThreads(1);
 	  std::cout << "Number of Threads: " << optimizer->GetNumberOfThreads() << std::endl;
 	  if (imageIndex==1) {
 		  optimizer->SetInitialPosition(outputBSplineTransform->GetParameters());

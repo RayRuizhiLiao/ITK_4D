@@ -33,8 +33,8 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImag
   this->m_Radius.Fill( static_cast<RadiusValueType>(2) );
   // We have our own GetValueAndDerivativeThreader's that we want
   // ImageToImageMetricv4 to use.
-  this->m_DenseGetValueAndDerivativeThreader  = ANTSNeighborhoodCorrelationImageToImageMetricv4DenseGetValueAndDerivativeThreaderType::New();
-  this->m_SparseGetValueAndDerivativeThreader = ANTSNeighborhoodCorrelationImageToImageMetricv4SparseGetValueAndDerivativeThreaderType::New();
+  this->m_DenseGetValueAndDerivativeThreader  = ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4DenseGetValueAndDerivativeThreaderType::New();
+  this->m_SparseGetValueAndDerivativeThreader = ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4SparseGetValueAndDerivativeThreaderType::New();
 }
 
 template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
