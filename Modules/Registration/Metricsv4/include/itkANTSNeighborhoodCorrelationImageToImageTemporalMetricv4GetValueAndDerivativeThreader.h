@@ -138,19 +138,15 @@ public:
     typename FixedImageType::ConstPointer   fixedImage;
     typename MovingImageType::ConstPointer  movingImage;
     typename VirtualImageType::ConstPointer virtualImage;
+    //typename FixedImageType::ConstPointer   maskImage;
     RadiusType radius;
 
   } ScanParametersType;
 
-  bool maskFlag;
-  typename FixedImageType::ConstPointer   maskImage;
-
 protected:
   ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThreader() :
     m_ANTSAssociate(ITK_NULLPTR)
-  {
-	  maskFlag = false;
-  }
+  {}
 
   /**
    * Dense threader and sparse threader invoke different in multi-threading. This class uses overloaded

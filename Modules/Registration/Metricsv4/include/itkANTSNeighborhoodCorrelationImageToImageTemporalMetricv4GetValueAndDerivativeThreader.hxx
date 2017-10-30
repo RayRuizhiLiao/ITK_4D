@@ -303,7 +303,9 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
   scanParameters.movingImage  = this->m_ANTSAssociate->m_MovingImage;
   scanParameters.virtualImage = this->m_ANTSAssociate->GetVirtualImage();
   scanParameters.radius       = this->m_ANTSAssociate->GetRadius();
-  std::cout << "True or False:" << this->maskFlag << std::endl;
+  //scanParameters.maskImage    = this->m_ANTSAssociate->maskImage;
+  std::cout << "True or False:" << this->m_ANTSAssociate->maskFlag << std::endl;
+
 
   OffsetValueType numberOfFillZero = this->m_ANTSAssociate->GetVirtualRegion().GetIndex(0)
       - (scanRegion.GetIndex(0) - scanParameters.radius[0]);

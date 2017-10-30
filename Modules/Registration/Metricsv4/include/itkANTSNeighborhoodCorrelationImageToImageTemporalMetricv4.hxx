@@ -60,6 +60,16 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImag
   os << indent << "Correlation window radius: " << m_Radius << std::endl;
 }
 
+template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
+void
+ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
+::SetMaskImage()
+{
+  std::cout << "Set Mask Image!!" << std::endl;
+
+  this->maskFlag = true;
+}
+
 } // end namespace itk
 
 #endif
