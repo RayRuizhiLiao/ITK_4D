@@ -239,7 +239,6 @@ template < typename TDomainPartitioner, typename TImageToImageMetric, typename T
    {
    continue;
    }
-
    typename VirtualImageType::IndexType index = scanIt.GetIndex(indct);
 
    VirtualPointType virtualPoint;
@@ -257,6 +256,10 @@ template < typename TDomainPartitioner, typename TImageToImageMetric, typename T
      if (pointIsValid)
        {
        pointIsValid = this->m_ANTSAssociate->TransformAndEvaluateMovingPoint( virtualPoint, mappedMovingPoint, movingImageValue );
+       //std::ofstream outfile;
+       //outfile.open("out.txt", std::ofstream::out|std::ofstream::app);
+       //outfile << "This is called!" << scanIt.GetIndex()[0] << " " << scanIt.GetIndex()[1] << " " << scanIt.GetIndex()[2] << " valid or not: " << pointIsValid << std::endl;
+       //outfile.close();
        }
      }
    catch (ExceptionObject & exc)
@@ -303,8 +306,8 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
   scanParameters.movingImage  = this->m_ANTSAssociate->m_MovingImage;
   scanParameters.virtualImage = this->m_ANTSAssociate->GetVirtualImage();
   scanParameters.radius       = this->m_ANTSAssociate->GetRadius();
-  //scanParameters.maskImage    = this->m_ANTSAssociate->maskImage;
-  std::cout << "True or False:" << this->m_ANTSAssociate->maskFlag << std::endl;
+
+  //std::cout << scanRegion << std::endl;
 
 
   OffsetValueType numberOfFillZero = this->m_ANTSAssociate->GetVirtualRegion().GetIndex(0)
@@ -330,6 +333,7 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
   scanMem.fixedImageGradient.Fill(0.0);
   scanMem.movingImageGradient.Fill(0.0);
   scanMem.mappedMovingPoint.Fill(0.0);
+
 }
 
 template < typename TDomainPartitioner, typename TImageToImageMetric, typename TNeighborhoodCorrelationMetric >
@@ -462,6 +466,12 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
    scanMem.mappedFixedPoint  = mappedFixedPoint;
    scanMem.mappedMovingPoint = mappedMovingPoint;
    scanMem.virtualPoint      = virtualPoint;
+
+   //std::ofstream outfile;
+   //outfile.open("out2.txt", std::ofstream::out|std::ofstream::app);
+   //outfile << scanIt.GetIndex()[0] << " " << scanIt.GetIndex()[1] << " " << scanIt.GetIndex()[2] << " " << count << std::endl;
+   //outfile.close();
+
    }
 
  return pointIsValid;

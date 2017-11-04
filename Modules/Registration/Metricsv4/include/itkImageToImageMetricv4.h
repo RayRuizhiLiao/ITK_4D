@@ -698,6 +698,7 @@ protected:
   void PrintSelf(std::ostream& os, Indent indent) const ITK_OVERRIDE;
 
 private:
+
   /** Map the fixed point set samples to the virtual domain */
   void MapFixedSampledPointSetToVirtual();
 

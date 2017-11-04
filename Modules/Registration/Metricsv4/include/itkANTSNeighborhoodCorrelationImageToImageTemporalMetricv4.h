@@ -168,11 +168,7 @@ public:
   itkGetMacro(Radius, RadiusType);
   itkGetConstMacro(Radius, RadiusType);
 
-  bool maskFlag;
-
   void Initialize(void) throw ( itk::ExceptionObject ) ITK_OVERRIDE;
-
-  void SetMaskImage();
 
 protected:
   ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4();

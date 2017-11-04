@@ -138,7 +138,6 @@ public:
     typename FixedImageType::ConstPointer   fixedImage;
     typename MovingImageType::ConstPointer  movingImage;
     typename VirtualImageType::ConstPointer virtualImage;
-    //typename FixedImageType::ConstPointer   maskImage;
     RadiusType radius;
 
   } ScanParametersType;

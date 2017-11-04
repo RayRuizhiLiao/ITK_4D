@@ -52,7 +52,8 @@
 //  Software Guide : EndLatex
 
 // Software Guide : BeginCodeSnippet
-#include "itkBSplineTransform.h"
+#include "itkVersorRigid3DTransform.h"
+#include "itkCenteredTransformInitializer.h"
 #include "itkLBFGSBOptimizerv4.h"
 // Software Guide : EndCodeSnippet
 
@@ -67,9 +68,10 @@
 //  \index{itk::BSplineTransform!header}
 //
 //  Software Guide : EndLatex
-
+#include "itkSpatialObject.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
+#include "itkImageMaskSpatialObject.h"
 
 #include "itkResampleImageFilter.h"
 #include "itkCastImageFilter.h"
@@ -146,6 +148,8 @@ int main( int argc, char *argv[] )
 
   typedef itk::Image< PixelType, ImageDimension >  FixedImageType;
   typedef itk::Image< PixelType, ImageDimension >  MovingImageType;
+  typedef itk::Image< unsigned char, ImageDimension > MaskImageType;
+  typedef itk::ImageMaskSpatialObject< ImageDimension >  FixedImageMaskType;
 
 
   //  Software Guide : BeginLatex
@@ -160,14 +164,10 @@ int main( int argc, char *argv[] )
   //  Software Guide : EndLatex
 
   // Software Guide : BeginCodeSnippet
-  const unsigned int SpaceDimension = ImageDimension;
-  const unsigned int SplineOrder = 3;
   typedef double CoordinateRepType;
 
-  typedef itk::BSplineTransform<
-                            CoordinateRepType,
-                            SpaceDimension,
-                            SplineOrder >     TransformType;
+  typedef itk::VersorRigid3DTransform< double > TransformType;
+
   // Software Guide : EndCodeSnippet
 
 
@@ -198,26 +198,39 @@ int main( int argc, char *argv[] )
   std::sscanf(argv[2], "%d", &numOfImages);
   std::cout << "There are " << numOfImages << " images in the given series!" << std::endl;
 
-
   typedef itk::ImageFileReader< FixedImageType  > FixedImageReaderType;
   typedef itk::ImageFileReader< MovingImageType > MovingImageReaderType;
+  typedef itk::ImageFileReader< MaskImageType >   MaskImageReaderType;
 
   FixedImageReaderType::Pointer  fixedImageReader  = FixedImageReaderType::New();
   MovingImageReaderType::Pointer movingImageReader = MovingImageReaderType::New();
+  MaskImageReaderType::Pointer  maskImageReader  = MaskImageReaderType::New();
+
+  FixedImageMaskType::Pointer spatialObjectMask = FixedImageMaskType::New();
 
   OptimizerType::ParametersType transformParameters;
 
   std::string outputFolder(argv[1]);
 
+  maskImageReader->SetFileName( argv[3] );
+
+  std::ofstream outfile;
+  std::ofstream outfile2;
+  outfile.open("out4.txt", std::ofstream::out|std::ofstream::app);
+  outfile2.open("out5.txt", std::ofstream::out|std::ofstream::app);
+
+  //outfile << "This is called!" << scanIt.GetIndex()[0] << " " << scanIt.GetIndex()[1] << " " << scanIt.GetIndex()[2] << " valid or not: " << pointIsValid << std::endl;
+
+
   for (int imageIndex=1; imageIndex<numOfImages; imageIndex++) {
 
-	  fixedImageReader->SetFileName(  argv[3] );
-	  movingImageReader->SetFileName( argv[3+imageIndex] );
+	  fixedImageReader->SetFileName(  argv[4] );
+	  movingImageReader->SetFileName( argv[4+imageIndex] );
 
-	  std::string fixedImageName(argv[3]);
+	  std::string fixedImageName(argv[4]);
 	  std::string slash = "/";
 	  std::size_t fixedSlashIndex = fixedImageName.find(slash, fixedImageName.length()-25);
-	  std::string movingImageName(argv[3+imageIndex]);
+	  std::string movingImageName(argv[4+imageIndex]);
 	  std::size_t movingSlashIndex = movingImageName.find(slash, movingImageName.length()-25);
 
 	  std::string movedImageName = outputFolder + movingImageName.substr(movingSlashIndex+1, movingImageName.length()-movingSlashIndex-8) + "_to_" + fixedImageName.substr(fixedSlashIndex+1, fixedImageName.length()-fixedSlashIndex-8) + ".nii.gz";
@@ -229,6 +242,9 @@ int main( int argc, char *argv[] )
 
 	  registration->SetFixedImage(  fixedImage   );
 	  registration->SetMovingImage(   movingImageReader->GetOutput()   );
+	  maskImageReader->Update();
+	  spatialObjectMask->SetImage( maskImageReader->GetOutput() );
+	  metric->SetFixedImageMask(spatialObjectMask);
 
 	  fixedImageReader->Update();
 
@@ -243,39 +259,45 @@ int main( int argc, char *argv[] )
 	  //  Software Guide : EndLatex
 
 	  // Software Guide : BeginCodeSnippet
-	  TransformType::Pointer  outputBSplineTransform = TransformType::New();
+	  TransformType::Pointer  outputTransform = TransformType::New();
 	  // Software Guide : EndCodeSnippet
 
 	  // Initialize the transform
-	  typedef itk::BSplineTransformInitializer< TransformType,
-												FixedImageType>      InitializerType;
-
-	  InitializerType::Pointer transformInitializer = InitializerType::New();
+	  typedef itk::CenteredTransformInitializer<
+	    TransformType,
+	    FixedImageType,
+	    MovingImageType >  TransformInitializerType;
+	  TransformInitializerType::Pointer initializer =
+	    TransformInitializerType::New();
 
 	  //unsigned int numberOfGridNodesInOneDimension = 8;
 
-	  TransformType::MeshSizeType             meshSize;
-	  meshSize.SetElement(0, 20);
-	  meshSize.SetElement(1, 20);
-	  meshSize.SetElement(2, 16);
+	  initializer->SetTransform(   outputTransform );
+	  initializer->SetFixedImage(  fixedImageReader->GetOutput() );
+	  initializer->SetMovingImage( movingImageReader->GetOutput() );
+	  initializer->MomentsOn();
+	  initializer->InitializeTransform();
+
+
 	  //meshSize.Fill( numberOfGridNodesInOneDimension - SplineOrder );
 
-	  transformInitializer->SetTransform( outputBSplineTransform );
-	  transformInitializer->SetImage( fixedImage );
-	  transformInitializer->SetTransformDomainMeshSize( meshSize );
-	  transformInitializer->InitializeTransform();
+	  typedef TransformType::VersorType  VersorType;
+	  typedef VersorType::VectorType     VectorType;
+	  VersorType     rotation;
+	  VectorType     axis;
+	  axis[0] = 0.0;
+	  axis[1] = 0.0;
+	  axis[2] = 1.0;
+	  const double angle = 0;
+	  rotation.Set(  axis, angle  );
+	  outputTransform->SetRotation( rotation );
 
-	  // Set transform to identity
-	  typedef TransformType::ParametersType     ParametersType;
-	  const unsigned int numberOfParameters =
-				   outputBSplineTransform->GetNumberOfParameters();
-	  ParametersType parameters( numberOfParameters );
-	  parameters.Fill( 0.0 );
-	  outputBSplineTransform->SetParameters( parameters );
-	  TransformType::Pointer  identityBSplineTransform = outputBSplineTransform->Clone();
+	  outfile2 << outputTransform->GetParameters() << std::endl;
+	  outfile2 << transformParameters << std::endl;
+
 
 	  // Software Guide : BeginCodeSnippet
-	  registration->SetInitialTransform( outputBSplineTransform );
+	  registration->SetInitialTransform( outputTransform );
 	  registration->InPlaceOn();
 	  // Software Guide : EndCodeSnippet
 
@@ -308,7 +330,7 @@ int main( int argc, char *argv[] )
 
 	  // Software Guide : BeginCodeSnippet
 	  const unsigned int numParameters =
-		outputBSplineTransform->GetNumberOfParameters();
+			  outputTransform->GetNumberOfParameters();
 	  OptimizerType::BoundSelectionType boundSelect( numParameters );
 	  OptimizerType::BoundValueType upperBound( numParameters );
 	  OptimizerType::BoundValueType lowerBound( numParameters );
@@ -320,20 +342,18 @@ int main( int argc, char *argv[] )
 	  optimizer->SetBoundSelection( boundSelect );
 	  optimizer->SetUpperBound( upperBound );
 	  optimizer->SetLowerBound( lowerBound );
-	  optimizer->TraceOn();
-	  optimizer->SetCostFunctionConvergenceFactor( 1e+11 );
-	  optimizer->SetGradientConvergenceTolerance( 1.0e-10 );
+	  //optimizer->TraceOn();
+	  optimizer->SetCostFunctionConvergenceFactor( 1e+7 );
+	  optimizer->SetGradientConvergenceTolerance( 1.0e-35 );
 	  optimizer->SetNumberOfIterations( 30 );
-	  optimizer->SetMaximumNumberOfFunctionEvaluations( 50 );
-	  optimizer->SetMaximumNumberOfCorrections( 5 );
-	  optimizer->SetNumberOfThreads(1);
-	  registration->SetNumberOfThreads(1);
-	  metric->SetMaximumNumberOfThreads(1);
-	  metric->SetMaskImage();
-	  //metric->GetValueAndDerivativeExecute()
+	  optimizer->SetMaximumNumberOfFunctionEvaluations( 200 );
+	  optimizer->SetMaximumNumberOfCorrections( 6 );
+	  //optimizer->SetNumberOfThreads(1);
+	  //registration->SetNumberOfThreads(1);
+	  //metric->SetMaximumNumberOfThreads(1);
 	  std::cout << "Number of Threads: " << optimizer->GetNumberOfThreads() << std::endl;
 	  if (imageIndex==1) {
-		  optimizer->SetInitialPosition(outputBSplineTransform->GetParameters());
+		  optimizer->SetInitialPosition(outputTransform->GetParameters());
 	  } else {
 		  optimizer->SetInitialPosition(transformParameters);
 	  }
@@ -343,7 +363,7 @@ int main( int argc, char *argv[] )
 	  // Create the Command observer and register it with the optimizer.
 	  //
 	  CommandIterationUpdate::Pointer observer = CommandIterationUpdate::New();
-	  optimizer->AddObserver( itk::IterationEvent(), observer );
+	  //optimizer->AddObserver( itk::IterationEvent(), observer );
 
 
 	  // Add time and memory probes
@@ -393,11 +413,13 @@ int main( int argc, char *argv[] )
 	  //  Software Guide : EndLatex
 
 	  // Software Guide : BeginCodeSnippet
-	  transformParameters = outputBSplineTransform->GetParameters();
+	  transformParameters = outputTransform->GetParameters();
 	  // Software Guide : EndCodeSnippet
 
-	  std::cout << "Last Transform Parameters" << std::endl;
-	  //std::cout << transformParameters << std::endl;
+	  outfile2 << "Last Transform Parameters: ";
+	  outfile2 << transformParameters << std::endl;
+
+	  outfile << optimizer->GetCurrentMetricValue() <<std::endl;
 
 	  // Finally we use the last transform in order to resample the image.
 	  //
@@ -407,7 +429,7 @@ int main( int argc, char *argv[] )
 
 	  ResampleFilterType::Pointer resample = ResampleFilterType::New();
 
-	  resample->SetTransform( outputBSplineTransform );
+	  resample->SetTransform( outputTransform );
 	  resample->SetInput( movingImageReader->GetOutput() );
 
 	  resample->SetSize(    fixedImage->GetLargestPossibleRegion().GetSize() );
@@ -462,7 +484,7 @@ int main( int argc, char *argv[] )
 													 DisplacementFieldGeneratorType::New();
 	  dispfieldGenerator->UseReferenceImageOn();
 	  dispfieldGenerator->SetReferenceImage( fixedImage );
-	  dispfieldGenerator->SetTransform( outputBSplineTransform );
+	  dispfieldGenerator->SetTransform( outputTransform );
 	  try
 		{
 		dispfieldGenerator->Update();
@@ -491,6 +513,9 @@ int main( int argc, char *argv[] )
 	    }
 
   }
+
+  outfile.close();
+  outfile2.close();
 
   return EXIT_SUCCESS;
 }
