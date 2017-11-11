@@ -261,6 +261,10 @@ protected:
 public:
   typedef itk::LBFGSBOptimizerv4       OptimizerType;
   typedef   const OptimizerType *                               OptimizerPointer;
+  void SetOutputOptimizationLog (std::string outputFile) {
+	  this->outputOptimizationLog = outputFile;
+  }
+  std::string outputOptimizationLog;
 
   void Execute(itk::Object *caller, const itk::EventObject & event) ITK_OVERRIDE
   {
@@ -270,7 +274,7 @@ public:
   void Execute(const itk::Object * object, const itk::EventObject & event) ITK_OVERRIDE
   {
   std::ofstream outfile2;
-  outfile2.open("out2.txt", std::ofstream::out|std::ofstream::app);
+  outfile2.open(this->outputOptimizationLog.c_str(), std::ofstream::out|std::ofstream::app);
 
   OptimizerPointer optimizer = static_cast< OptimizerPointer >( object );
   if( !(itk::IterationEvent().CheckEvent( &event )) )
@@ -372,7 +376,8 @@ int main( int argc, char *argv[] )
   maskImageReader->SetFileName( argv[3] );
 
   std::ofstream outfile;
-  outfile.open("out1.txt", std::ofstream::out|std::ofstream::app);
+  std::string outputMetricValues = outputFolder + "metric_values.txt";
+  outfile.open(outputMetricValues.c_str(), std::ofstream::out|std::ofstream::app);
 
   //outfile << "This is called!" << scanIt.GetIndex()[0] << " " << scanIt.GetIndex()[1] << " " << scanIt.GetIndex()[2] << " valid or not: " << pointIsValid << std::endl;
 
@@ -380,32 +385,39 @@ int main( int argc, char *argv[] )
   for (int imageIndex=1; imageIndex<numOfImages; imageIndex++) {
 
 
-	  fixedImageReader->SetFileName(  argv[4] );
-	  movingImageReader->SetFileName( argv[4+imageIndex] );
+	  movingImageReader->SetFileName(  argv[4] );
+	  fixedImageReader->SetFileName( argv[4+imageIndex] );
 
-	  std::string fixedImageName(argv[4]);
+	  std::string movingImageName(argv[4]);
 	  std::string slash = "/";
-	  std::size_t fixedSlashIndex = fixedImageName.find(slash, fixedImageName.length()-25);
-	  std::string movingImageName(argv[4+imageIndex]);
 	  std::size_t movingSlashIndex = movingImageName.find(slash, movingImageName.length()-25);
+	  std::string fixedImageName(argv[4+imageIndex]);
+	  std::size_t fixedSlashIndex = fixedImageName.find(slash, fixedImageName.length()-25);
 
 	  std::string movedImageName = outputFolder + movingImageName.substr(movingSlashIndex+1, movingImageName.length()-movingSlashIndex-8) + "_to_" + fixedImageName.substr(fixedSlashIndex+1, fixedImageName.length()-fixedSlashIndex-8) + ".nii.gz";
 	  std::cout << "Moved Image Name: " << movedImageName << std::endl;
 	  std::string warpFieldName = outputFolder + movingImageName.substr(movingSlashIndex+1, movingImageName.length()-movingSlashIndex-8) + "_to_" + fixedImageName.substr(fixedSlashIndex+1, fixedImageName.length()-fixedSlashIndex-8) + "_warp.nii.gz";
 	  std::cout << "Warp Image Name: " << warpFieldName << std::endl;
 
+	  std::string inverseMovedImageName = outputFolder + fixedImageName.substr(fixedSlashIndex+1, fixedImageName.length()-fixedSlashIndex-8) + "_to_" + movingImageName.substr(movingSlashIndex+1, movingImageName.length()-movingSlashIndex-8) + ".nii.gz";
+	  std::cout << "Inverse Moved Image Name: " << inverseMovedImageName << std::endl;
+	  std::string inverseWarpFieldName = outputFolder + fixedImageName.substr(fixedSlashIndex+1, fixedImageName.length()-fixedSlashIndex-8) + "_to_" + movingImageName.substr(movingSlashIndex+1, movingImageName.length()-movingSlashIndex-8) + "_inverseWarp.nii.gz";
+	  std::cout << "Inverse Warp Image Name: " << inverseWarpFieldName << std::endl;
+
 	  std::ofstream outfile2;
-	  outfile2.open("out2.txt", std::ofstream::out|std::ofstream::app);
+	  std::string outputOptimizationLog = outputFolder + "optimization_log.txt";
+	  outfile2.open(outputOptimizationLog.c_str(), std::ofstream::out|std::ofstream::app);
       outfile2 << movedImageName << std::endl;
       outfile2.close();
 
 	  FixedImageType::ConstPointer fixedImage = fixedImageReader->GetOutput();
+	  FixedImageType::ConstPointer movingImage = movingImageReader->GetOutput();
 
 	  registration->SetFixedImage(  fixedImage   );
 	  registration->SetMovingImage(   movingImageReader->GetOutput()   );
 	  maskImageReader->Update();
 	  spatialObjectMask->SetImage( maskImageReader->GetOutput() );
-	  metric->SetFixedImageMask(spatialObjectMask);
+	  metric->SetMovingImageMask(spatialObjectMask);
 
 	  fixedImageReader->Update();
 
@@ -426,6 +438,7 @@ int main( int argc, char *argv[] )
 	  TransformType::Pointer  outputTransform2 = TransformType::New();
 	  TransformType::Pointer  outputTransform3 = TransformType::New();
 	  TransformType::Pointer  outputTransform = TransformType::New();
+	  TransformType::Pointer  inverseOutputTransform = TransformType::New();
 
 	  TransformType::Pointer  initialTransform1 = TransformType::New();
 	  TransformType::Pointer  initialTransform2 = TransformType::New();
@@ -529,6 +542,7 @@ int main( int argc, char *argv[] )
 	  }
 
 	  CommandIterationUpdate::Pointer observer = CommandIterationUpdate::New();
+	  observer->SetOutputOptimizationLog(outputOptimizationLog);
 	  optimizer->AddObserver( itk::IterationEvent(), observer );
 
 	  typedef RegistrationInterfaceCommand<RegistrationType> CommandType;
@@ -647,6 +661,7 @@ int main( int argc, char *argv[] )
 	  }
 
 	  observer = CommandIterationUpdate::New();
+	  observer->SetOutputOptimizationLog(outputOptimizationLog);
 	  optimizer->AddObserver( itk::IterationEvent(), observer );
 
 	  command = CommandType::New();
@@ -758,6 +773,7 @@ int main( int argc, char *argv[] )
 	  }
 
 	  observer = CommandIterationUpdate::New();
+	  observer->SetOutputOptimizationLog(outputOptimizationLog);
 	  optimizer->AddObserver( itk::IterationEvent(), observer );
 
 	  command = CommandType::New();
@@ -833,7 +849,10 @@ int main( int argc, char *argv[] )
 			  outputTransform = outputTransform3->Clone();
 		  }
 	  }
+
 	  transformParameters = outputTransform->GetParameters();
+	  inverseOutputTransform = outputTransform->GetInverseTransform();
+
 	  // Software Guide : EndCodeSnippet
 
 	  // Finally we use the last transform in order to resample the image.
@@ -919,6 +938,76 @@ int main( int argc, char *argv[] )
 	  try
 	    {
 		fieldWriter->Update();
+	    }
+	  catch( itk::ExceptionObject & excp )
+	    {
+		std::cerr << "Exception thrown " << std::endl;
+		std::cerr << excp << std::endl;
+		return EXIT_FAILURE;
+	    }
+
+	  // Finally we use the last inverse transform in order to resample the image.
+	  //
+	  ResampleFilterType::Pointer resample2 = ResampleFilterType::New();
+
+	  resample2->SetTransform( inverseOutputTransform );
+	  resample2->SetInput( fixedImageReader->GetOutput() );
+
+	  resample2->SetSize(    movingImage->GetLargestPossibleRegion().GetSize() );
+	  resample2->SetOutputOrigin(  movingImage->GetOrigin() );
+	  resample2->SetOutputSpacing( movingImage->GetSpacing() );
+	  resample2->SetOutputDirection( movingImage->GetDirection() );
+	  resample2->SetDefaultPixelValue( 0 );
+
+	  WriterType::Pointer      writer2 =  WriterType::New();
+	  CastFilterType::Pointer  caster2 =  CastFilterType::New();
+
+
+	  writer2->SetFileName( inverseMovedImageName );
+
+
+	  caster2->SetInput( resample->GetOutput() );
+	  writer2->SetInput( caster->GetOutput()   );
+
+	  try
+		{
+		writer2->Update();
+		}
+	  catch( itk::ExceptionObject & err )
+		{
+		std::cerr << "ExceptionObject caught !" << std::endl;
+		std::cerr << err << std::endl;
+		return EXIT_FAILURE;
+		}
+
+	  // Generate the explicit inverse deformation field resulting from
+	  // the registration.
+
+	  /** Create an setup displacement field generator. */
+	  DisplacementFieldGeneratorType::Pointer dispfieldGenerator2 =
+													 DisplacementFieldGeneratorType::New();
+	  dispfieldGenerator2->UseReferenceImageOn();
+	  dispfieldGenerator2->SetReferenceImage( movingImage );
+	  dispfieldGenerator2->SetTransform( inverseOutputTransform );
+	  try
+		{
+		  dispfieldGenerator2->Update();
+		}
+	  catch ( itk::ExceptionObject & err )
+		{
+		std::cerr << "Exception detected while generating deformation field";
+		std::cerr << " : "  << err << std::endl;
+		return EXIT_FAILURE;
+		}
+
+	  typedef itk::ImageFileWriter< DisplacementFieldImageType >  FieldWriterType;
+	  FieldWriterType::Pointer fieldWriter2 = FieldWriterType::New();
+
+	  fieldWriter2->SetInput( dispfieldGenerator2->GetOutput() );
+	  fieldWriter2->SetFileName( inverseWarpFieldName );
+	  try
+	    {
+		  fieldWriter2->Update();
 	    }
 	  catch( itk::ExceptionObject & excp )
 	    {
