@@ -21,6 +21,7 @@
 #include "itkANTSNeighborhoodCorrelationImageToImageTemporalMetricv4.h"
 #include "itkNumericTraits.h"
 
+
 namespace itk
 {
 
@@ -30,6 +31,8 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImag
 {
   // initialize radius. note that a radius of 1 can be unstable
   typedef typename RadiusType::SizeValueType RadiusValueType;
+
+
   this->m_Radius.Fill( static_cast<RadiusValueType>(2) );
   // We have our own GetValueAndDerivativeThreader's that we want
   // ImageToImageMetricv4 to use.
@@ -58,6 +61,99 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImag
 {
   Superclass::PrintSelf(os, indent);
   os << indent << "Correlation window radius: " << m_Radius << std::endl;
+}
+
+template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
+void
+ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
+::SetTemporalSmoothness1(double w1)
+{
+  this->TemporalSmoothnessWeight1 = w1;
+}
+
+template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
+double
+ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
+::GetTemporalSmoothness1()
+{
+  return this->TemporalSmoothnessWeight1;
+}
+
+template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
+void
+ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
+::SetTemporalSmoothness2(double w2)
+{
+  this->TemporalSmoothnessWeight2 = w2;
+}
+
+template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
+double
+ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
+::GetTemporalSmoothness2()
+{
+  return this->TemporalSmoothnessWeight2;
+}
+
+template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
+void
+ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
+::SetPreviousTransformParameters(double *t, int num)
+{
+  this->PreviousTransformParameters = new double[num];
+  this->NumOfTransformParameters = num;
+  for (int i=0; i<num; i++)
+  {
+	  this->PreviousTransformParameters[i] = t[i];
+  }
+}
+
+template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
+double*
+ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
+::GetPreviousTransformParameters()
+{
+  return this->PreviousTransformParameters;
+}
+
+template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
+int
+ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
+::GetNumOfTransformParameters()
+{
+  return this->NumOfTransformParameters;
+}
+
+template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
+void
+ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
+::SetPreviousNumberOfValidPoints(double count)
+{
+  this->PreviousNumberOfValidPoints = count;
+}
+
+template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
+double
+ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
+::GetPreviousNumberOfValidPoints()
+{
+  return this->PreviousNumberOfValidPoints;
+}
+
+template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
+void
+ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
+::SetCurrentNumberOfValidPoints(double count)
+{
+  this->CurrentNumberOfValidPoints = count;
+}
+
+template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
+double
+ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
+::GetCurrentNumberOfValidPoints()
+{
+  return this->CurrentNumberOfValidPoints;
 }
 
 } // end namespace itk

@@ -92,6 +92,7 @@ public:
   typedef typename NeighborhoodCorrelationMetricType::ImageDimensionType            ImageDimensionType;
   typedef typename NeighborhoodCorrelationMetricType::JacobianType                  JacobianType;
   typedef typename NeighborhoodCorrelationMetricType::NumberOfParametersType        NumberOfParametersType;
+  typedef typename NeighborhoodCorrelationMetricType::ParametersType                ParametersType;
   typedef typename NeighborhoodCorrelationMetricType::FixedImageType                FixedImageType;
   typedef typename NeighborhoodCorrelationMetricType::MovingImageType               MovingImageType;
   typedef typename NeighborhoodCorrelationMetricType::RadiusType                    RadiusType;

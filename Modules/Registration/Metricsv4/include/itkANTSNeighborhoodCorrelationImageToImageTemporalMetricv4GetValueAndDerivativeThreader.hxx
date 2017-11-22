@@ -19,6 +19,7 @@
 #define itkANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThreader_hxx
 
 #include "itkANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThreader.h"
+#include <cstdlib>
 
 namespace itk
 {
@@ -51,6 +52,7 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
   /* Create an iterator over the virtual sub region */
   // this->m_ANTSAssociate->InitializeScanning( virtualImageSubRegion, scanIt, scanMem, scanParameters );
   this->InitializeScanning( virtualImageSubRegion, scanIt, scanMem, scanParameters );
+  double count = 0;
 
   /* Iterate over the sub region */
   scanIt.GoToBegin();
@@ -90,11 +92,22 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
         {
         this->StorePointDerivativeResult( scanIt.GetIndex(), threadId );
         }
+      count++;
       }
 
     //next index
     ++scanIt;
     }
+
+  double prevCount = this->m_ANTSAssociate->GetPreviousNumberOfValidPoints();
+  //if (prevCount>-1)
+  //{
+  //	  if (std::abs(prevCount-count)/prevCount>0.2){
+  //		  metricValueSum += std::abs(prevCount-count);
+  //	  }
+  //}
+
+  this->m_ANTSAssociate->SetCurrentNumberOfValidPoints(count);
 
   /* Store metric value result for this thread. */
   this->m_GetValueAndDerivativePerThreadVariables[threadId].Measure = metricValueSum;
@@ -452,6 +465,11 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
    throw err;
    }
 
+ if ( fabs(sFixedFixed * sMovingMoving) <= NumericTraits< LocalRealType >::epsilon() )
+ {
+	 pointIsValid = false;
+ }
+
  if ( pointIsValid )
    {
    scanMem.fixedA        = fixedImageValue  - fixedMean;
@@ -495,10 +513,25 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
 
   LocalRealType sFixedFixed_sMovingMoving = sFixedFixed * sMovingMoving;
 
+  double w1 = this->m_ANTSAssociate->GetTemporalSmoothness1();
+  double w2 = this->m_ANTSAssociate->GetTemporalSmoothness2();
+  double num = this->m_ANTSAssociate->GetNumOfTransformParameters();
+  double* prevT = this->m_ANTSAssociate->GetPreviousTransformParameters();
+  ParametersType currentT = this->m_Associate->GetMovingTransform()->GetParameters();
+
   if ( fabs(sFixedFixed_sMovingMoving) > NumericTraits< LocalRealType >::epsilon() )
     {
     localCC = sFixedMoving * sFixedMoving / (sFixedFixed_sMovingMoving);
     }
+  else
+  {
+	  if ( sFixedMoving * sFixedMoving < NumericTraits< LocalRealType >::epsilon() )
+	  {
+		  localCC = NumericTraits<MeasureType>::ZeroValue();
+	  }
+  }
+  localCC -= 0.5*w1*((currentT[0]-prevT[0])*(currentT[0]-prevT[0])+(currentT[1]-prevT[1])*(currentT[1]-prevT[1])+(currentT[2]-prevT[2])*(currentT[2]-prevT[2]));
+  localCC -= 0.5*w2*((currentT[3]-prevT[3])*(currentT[3]-prevT[3])+(currentT[4]-prevT[4])*(currentT[4]-prevT[4])+(currentT[5]-prevT[5])*(currentT[5]-prevT[5]));
 
   if( this->m_ANTSAssociate->GetComputeDerivative() )
     {
@@ -528,15 +561,23 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
 
     NumberOfParametersType numberOfLocalParameters = this->m_Associate->GetMovingTransform()->GetNumberOfLocalParameters();
 
+
     for (NumberOfParametersType par = 0; par < numberOfLocalParameters; par++)
       {
       deriv[par] = NumericTraits<DerivativeValueType>::ZeroValue();
       for (ImageDimensionType dim = 0; dim < TImageToImageMetric::MovingImageDimension; dim++)
         {
         deriv[par] += derivWRTImage[dim] * jacobian(dim, par);
+        if (par<3) {
+        	deriv[par] += w1*(currentT[par]-prevT[par]);
+        } else {
+        	deriv[par] += w2*(currentT[par]-prevT[par]);
+        }
         }
       }
     }
+
+  	//std::cout << this->m_Associate->GetMovingTransform()->GetParameters() << std::endl;
 }
 
 /*

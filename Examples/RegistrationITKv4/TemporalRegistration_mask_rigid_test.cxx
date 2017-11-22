@@ -281,10 +281,11 @@ public:
     {
     return;
     }
-  outfile2 << optimizer->GetCurrentIteration() << "   ";
-  outfile2 << optimizer->GetValue() << "   ";
-  outfile2 << optimizer->GetCurrentPosition() << "   ";
-  outfile2 << m_CumulativeIterationIndex++ << std::endl;
+  std::cout << optimizer->GetCurrentIteration() << "   ";
+  std::cout << optimizer->GetValue() << "   ";
+  std::cout << optimizer->GetCurrentPosition() << "   ";
+  std::cout << optimizer->GetCachedDerivative() << "   ";
+  std::cout << m_CumulativeIterationIndex++ << std::endl;
   outfile2.close();
   }
 private:
@@ -379,19 +380,37 @@ int main( int argc, char *argv[] )
   std::string outputMetricValues = outputFolder + "metric_values.txt";
   outfile.open(outputMetricValues.c_str(), std::ofstream::out|std::ofstream::app);
 
+  std::ofstream outfile3;
+  std::string outputTransformParameters = outputFolder + "transform_parameters.txt";
+  outfile3.open(outputTransformParameters.c_str(), std::ofstream::out|std::ofstream::app);
+
   //outfile << "This is called!" << scanIt.GetIndex()[0] << " " << scanIt.GetIndex()[1] << " " << scanIt.GetIndex()[2] << " valid or not: " << pointIsValid << std::endl;
 
+  double w1;
+  std::sscanf(argv[4], "%lf", &w1);
+  double w2;
+  std::sscanf(argv[5], "%lf", &w2);
+
+  metric->SetTemporalSmoothness1(w1);
+  metric->SetTemporalSmoothness2(w2);
+
+  double* t = new double[6];
+  for (int i=0; i<6; i++)
+  {
+	  t[i] = 0;
+  }
+  metric->SetPreviousTransformParameters(t, 6);
 
   for (int imageIndex=1; imageIndex<numOfImages; imageIndex++) {
 
 
-	  movingImageReader->SetFileName(  argv[4] );
-	  fixedImageReader->SetFileName( argv[4+imageIndex] );
+	  movingImageReader->SetFileName(  argv[6] );
+	  fixedImageReader->SetFileName( argv[6+imageIndex] );
 
-	  std::string movingImageName(argv[4]);
+	  std::string movingImageName(argv[6]);
 	  std::string slash = "/";
 	  std::size_t movingSlashIndex = movingImageName.find_last_of(slash);
-	  std::string fixedImageName(argv[4+imageIndex]);
+	  std::string fixedImageName(argv[6+imageIndex]);
 	  std::size_t fixedSlashIndex = fixedImageName.find_last_of(slash);
 
 	  std::string movedImageName = outputFolder + movingImageName.substr(movingSlashIndex+1, movingImageName.length()-movingSlashIndex-8) + "_to_" + fixedImageName.substr(fixedSlashIndex+1, fixedImageName.length()-fixedSlashIndex-8) + ".nii.gz";
@@ -853,6 +872,17 @@ int main( int argc, char *argv[] )
 	  transformParameters = outputTransform->GetParameters();
 	  outputTransform->GetInverse(inverseOutputTransform);
 
+      outfile3 << movedImageName << std::endl;
+      outfile3 << transformParameters << std::endl;
+      outfile3 << inverseOutputTransform->GetParameters() << std::endl;
+
+	  for (int i=0; i<6; i++)
+	  {
+		  t[i] = transformParameters[i];
+	  }
+	  metric->SetPreviousTransformParameters(t, 6);
+
+
 	  // Software Guide : EndCodeSnippet
 
 	  // Finally we use the last transform in order to resample the image.
@@ -1019,6 +1049,7 @@ int main( int argc, char *argv[] )
   }
 
   outfile.close();
+  outfile3.close();
 
   return EXIT_SUCCESS;
 }

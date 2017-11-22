@@ -150,6 +150,8 @@ public:
   typedef typename VirtualImageType::SizeType                 RadiusType;
   typedef typename VirtualImageType::IndexType                IndexType;
 
+  typedef itk::VersorRigid3DTransform< double > VersorRigid3DTransformType;
+
   /* Image dimension accessors */
   itkStaticConstMacro(FixedImageDimension, ImageDimensionType,
       FixedImageType::ImageDimension);
@@ -167,6 +169,20 @@ public:
   // Get the Radius of the neighborhood window centered at each pixel
   itkGetMacro(Radius, RadiusType);
   itkGetConstMacro(Radius, RadiusType);
+
+  void SetTemporalSmoothness1(double w1);
+  void SetTemporalSmoothness2(double w2);
+  void SetPreviousTransformParameters(double *t, int num);
+  void SetPreviousNumberOfValidPoints(double count);
+  void SetCurrentNumberOfValidPoints(double count);
+
+
+  double GetTemporalSmoothness1();
+  double GetTemporalSmoothness2();
+  double* GetPreviousTransformParameters();
+  int GetNumOfTransformParameters();
+  double GetPreviousNumberOfValidPoints();
+  double GetCurrentNumberOfValidPoints();
 
   void Initialize(void) throw ( itk::ExceptionObject ) ITK_OVERRIDE;
 
@@ -189,6 +205,13 @@ private:
 
   // Radius of the neighborhood window centered at each pixel
   RadiusType m_Radius;
+  double TemporalSmoothnessWeight1;
+  double TemporalSmoothnessWeight2;
+  double* PreviousTransformParameters;
+  double PreviousNumberOfValidPoints;
+  double CurrentNumberOfValidPoints;
+  int NumOfTransformParameters;
+
 };
 
 } // end namespace itk
