@@ -281,10 +281,11 @@ public:
     {
     return;
     }
-  outfile2 << optimizer->GetCurrentIteration() << "   ";
-  outfile2 << optimizer->GetValue() << "   ";
-  outfile2 << optimizer->GetCurrentPosition() << "   ";
-  outfile2 << m_CumulativeIterationIndex++ << std::endl;
+  std::cout << optimizer->GetCurrentIteration() << "   ";
+  std::cout << optimizer->GetValue() << "   ";
+  std::cout << optimizer->GetCurrentPosition() << "   ";
+  std::cout << optimizer->GetCachedDerivative() << "   ";
+  std::cout << m_CumulativeIterationIndex++ << std::endl;
   outfile2.close();
   }
 private:
@@ -379,19 +380,55 @@ int main( int argc, char *argv[] )
   std::string outputMetricValues = outputFolder + "metric_values.txt";
   outfile.open(outputMetricValues.c_str(), std::ofstream::out|std::ofstream::app);
 
+  std::ofstream outfile3;
+  std::string outputTransformParameters = outputFolder + "transform_parameters.txt";
+  outfile3.open(outputTransformParameters.c_str(), std::ofstream::out|std::ofstream::app);
+
+  std::ofstream outfile4;
+  std::string outputValidPoints = outputFolder + "valid_points.txt";
+  outfile4.open(outputValidPoints.c_str(), std::ofstream::out|std::ofstream::app);
+
+
   //outfile << "This is called!" << scanIt.GetIndex()[0] << " " << scanIt.GetIndex()[1] << " " << scanIt.GetIndex()[2] << " valid or not: " << pointIsValid << std::endl;
 
+  double w1;
+  std::sscanf(argv[4], "%lf", &w1);
+  double w2;
+  std::sscanf(argv[5], "%lf", &w2);
+
+  metric->SetTemporalSmoothness1(w1);
+  metric->SetTemporalSmoothness2(w2);
+
+  double* t = new double[6];
+  for (int i=0; i<6; i++)
+  {
+	  t[i] = 0;
+  }
+  metric->SetPreviousTransformParameters(t, 6);
+
+  // Software Guide : BeginCodeSnippet
+  TransformType::Pointer  outputTransform1 = TransformType::New();
+  TransformType::Pointer  outputTransform2 = TransformType::New();
+  TransformType::Pointer  outputTransform3 = TransformType::New();
+  TransformType::Pointer  outputTransform = TransformType::New();
+  TransformType::Pointer  inverseOutputTransform = TransformType::New();
+
+  TransformType::Pointer  initialTransform1 = TransformType::New();
+  TransformType::Pointer  initialTransform2 = TransformType::New();
+  TransformType::Pointer  initialTransform3 = TransformType::New();
+
+  double numberOfValidPoints = -1;
 
   for (int imageIndex=1; imageIndex<numOfImages; imageIndex++) {
 
 
-	  movingImageReader->SetFileName(  argv[4] );
-	  fixedImageReader->SetFileName( argv[4+imageIndex] );
+	  movingImageReader->SetFileName(  argv[6] );
+	  fixedImageReader->SetFileName( argv[6+imageIndex] );
 
-	  std::string movingImageName(argv[4]);
+	  std::string movingImageName(argv[6]);
 	  std::string slash = "/";
 	  std::size_t movingSlashIndex = movingImageName.find_last_of(slash);
-	  std::string fixedImageName(argv[4+imageIndex]);
+	  std::string fixedImageName(argv[6+imageIndex]);
 	  std::size_t fixedSlashIndex = fixedImageName.find_last_of(slash);
 
 	  std::string movedImageName = outputFolder + movingImageName.substr(movingSlashIndex+1, movingImageName.length()-movingSlashIndex-8) + "_to_" + fixedImageName.substr(fixedSlashIndex+1, fixedImageName.length()-fixedSlashIndex-8) + ".nii.gz";
@@ -432,17 +469,11 @@ int main( int argc, char *argv[] )
 	  //  Software Guide : EndLatex
 
 
+	  metric->SetPreviousNumberOfValidPoints(numberOfValidPoints);
 
-	  // Software Guide : BeginCodeSnippet
-	  TransformType::Pointer  outputTransform1 = TransformType::New();
-	  TransformType::Pointer  outputTransform2 = TransformType::New();
-	  TransformType::Pointer  outputTransform3 = TransformType::New();
-	  TransformType::Pointer  outputTransform = TransformType::New();
-	  TransformType::Pointer  inverseOutputTransform = TransformType::New();
+	  outfile3 << outputTransform->GetParameters() << std::endl;
 
-	  TransformType::Pointer  initialTransform1 = TransformType::New();
-	  TransformType::Pointer  initialTransform2 = TransformType::New();
-	  TransformType::Pointer  initialTransform3 = TransformType::New();
+	  outfile4 << metric->GetPreviousNumberOfValidPoints() << std::endl;
 
 	  // Initialize the transform
 	  typedef itk::CenteredTransformInitializer<
@@ -579,6 +610,7 @@ int main( int argc, char *argv[] )
 		return EXIT_FAILURE;
 		}
 
+	  double numberOfValidPoints3 = metric->GetCurrentNumberOfValidPoints();
 	  double metricValue3 = optimizer->GetCurrentMetricValue();
 	  outfile << metricValue3 <<std::endl;
 
@@ -693,6 +725,7 @@ int main( int argc, char *argv[] )
 		return EXIT_FAILURE;
 		}
 
+	  double numberOfValidPoints2 = metric->GetCurrentNumberOfValidPoints();
 	  double metricValue2 = optimizer->GetCurrentMetricValue();
 	  outfile << metricValue2 <<std::endl;
 
@@ -805,6 +838,7 @@ int main( int argc, char *argv[] )
 		return EXIT_FAILURE;
 		}
 
+	  double numberOfValidPoints1 = metric->GetCurrentNumberOfValidPoints();
 	  double metricValue1 = optimizer->GetCurrentMetricValue();
 	  outfile << metricValue1 <<std::endl;
 
@@ -831,27 +865,44 @@ int main( int argc, char *argv[] )
 	  if (imageIndex==1) {
 		  if (metricValue1<=metricValue2&&metricValue1<=metricValue3) {
 			  outputTransform = initialTransform1->Clone();
+			  numberOfValidPoints = numberOfValidPoints1;
 		  }
 		  if (metricValue2<=metricValue1&&metricValue2<=metricValue3) {
 			  outputTransform = initialTransform2->Clone();
+			  numberOfValidPoints = numberOfValidPoints2;
 		  }
 		  if (metricValue3<=metricValue1&&metricValue3<=metricValue2) {
 			  outputTransform = initialTransform3->Clone();
+			  numberOfValidPoints = numberOfValidPoints3;
 		  }
 	  } else {
 		  if (metricValue1<=metricValue2&&metricValue1<=metricValue3) {
 			  outputTransform = outputTransform1->Clone();
+			  numberOfValidPoints = numberOfValidPoints1;
 		  }
 		  if (metricValue2<=metricValue1&&metricValue2<=metricValue3) {
 			  outputTransform = outputTransform2->Clone();
+			  numberOfValidPoints = numberOfValidPoints2;
 		  }
 		  if (metricValue3<=metricValue1&&metricValue3<=metricValue2) {
 			  outputTransform = outputTransform3->Clone();
+			  numberOfValidPoints = numberOfValidPoints3;
 		  }
 	  }
 
 	  transformParameters = outputTransform->GetParameters();
 	  outputTransform->GetInverse(inverseOutputTransform);
+
+      outfile3 << movedImageName << std::endl;
+      outfile3 << transformParameters << std::endl;
+      outfile3 << inverseOutputTransform->GetParameters() << std::endl;
+
+	  for (int i=0; i<6; i++)
+	  {
+		  t[i] = transformParameters[i];
+	  }
+	  metric->SetPreviousTransformParameters(t, 6);
+	  metric->SetPreviousNumberOfValidPoints(numberOfValidPoints);
 
 	  // Software Guide : EndCodeSnippet
 
@@ -1019,6 +1070,8 @@ int main( int argc, char *argv[] )
   }
 
   outfile.close();
+  outfile3.close();
+  outfile4.close();
 
   return EXIT_SUCCESS;
 }
