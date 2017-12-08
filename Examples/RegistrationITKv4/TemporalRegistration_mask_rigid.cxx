@@ -419,6 +419,16 @@ int main( int argc, char *argv[] )
 
   double numberOfValidPoints = -1;
 
+  double x = 0;
+  double y = 0;
+  double z = 0;
+  double theta = 0;
+  std::sscanf(argv[6+numOfImages], "%lf", &x);
+  std::sscanf(argv[7+numOfImages], "%lf", &y);
+  std::sscanf(argv[8+numOfImages], "%lf", &z);
+  std::sscanf(argv[9+numOfImages], "%lf", &theta);
+
+
   for (int imageIndex=1; imageIndex<numOfImages; imageIndex++) {
 
 
@@ -493,15 +503,19 @@ int main( int argc, char *argv[] )
 		  typedef VersorType::VectorType     VectorType;
 		  VersorType     rotation;
 		  VectorType     axis;
-		  axis[0] = 0.0;
-		  axis[1] = 0.0;
-		  axis[2] = 1.0;
-		  const double angle = 0;
+		  axis[0] = x;
+		  axis[1] = y;
+		  axis[2] = z;
+		  const double angle = theta;
 		  rotation.Set(  axis, angle  );
 		  initialTransform3->SetRotation( rotation );
 
 		  registration->SetInitialTransform( initialTransform3 );
-		  registration->InPlaceOn();
+		  std::cout << x << " " << y << " " << z << std::endl;
+		  std::cout << initialTransform3->GetCenter() << std::endl;
+		  std::cout << initialTransform3->GetMatrix() << std::endl;
+		  std::cout << initialTransform3->GetOffset() << std::endl;
+		  //registration->InPlaceOn();
 	  } else {
 		  outputTransform3 = outputTransform->Clone();
 		  initializer->SetTransform(   outputTransform3 );
@@ -519,14 +533,14 @@ int main( int argc, char *argv[] )
 
 	  RegistrationType::ShrinkFactorsArrayType shrinkFactorsPerLevel;
 	  shrinkFactorsPerLevel.SetSize( numberOfLevels3 );
-	  shrinkFactorsPerLevel[0] = 3;
+	  shrinkFactorsPerLevel[0] = 4;
 	  shrinkFactorsPerLevel[1] = 2;
 	  shrinkFactorsPerLevel[2] = 1;
 	  RegistrationType::SmoothingSigmasArrayType smoothingSigmasPerLevel;
 	  smoothingSigmasPerLevel.SetSize( numberOfLevels3 );
-	  smoothingSigmasPerLevel[0] = 0;
-	  smoothingSigmasPerLevel[1] = 0;
-	  smoothingSigmasPerLevel[2] = 0;
+	  smoothingSigmasPerLevel[0] = 4;
+	  smoothingSigmasPerLevel[1] = 2;
+	  smoothingSigmasPerLevel[2] = 1;
 
 	  registration->SetNumberOfLevels( numberOfLevels3 );
 	  registration->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
@@ -625,15 +639,15 @@ int main( int argc, char *argv[] )
 		  typedef VersorType::VectorType     VectorType;
 		  VersorType     rotation;
 		  VectorType     axis;
-		  axis[0] = 0.0;
-		  axis[1] = 0.0;
-		  axis[2] = 1.0;
-		  const double angle = 0;
+		  axis[0] = x;
+		  axis[1] = y;
+		  axis[2] = z;
+		  const double angle = theta;
 		  rotation.Set(  axis, angle  );
-		  initialTransform2->SetRotation( rotation );
+		  initialTransform3->SetRotation( rotation );
 
 		  registration->SetInitialTransform( initialTransform2 );
-		  registration->InPlaceOn();
+		  //registration->InPlaceOn();
 	  } else {
 		  outputTransform2 = outputTransform->Clone();
 		  initializer->SetTransform(   outputTransform2 );
@@ -653,8 +667,8 @@ int main( int argc, char *argv[] )
 	  shrinkFactorsPerLevel[0] = 2;
 	  shrinkFactorsPerLevel[1] = 1;
 	  smoothingSigmasPerLevel.SetSize( numberOfLevels2 );
-	  smoothingSigmasPerLevel[0] = 0;
-	  smoothingSigmasPerLevel[1] = 0;
+	  smoothingSigmasPerLevel[0] = 2;
+	  smoothingSigmasPerLevel[1] = 1;
 
 	  registration->SetNumberOfLevels( numberOfLevels2 );
 	  registration->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
@@ -740,15 +754,15 @@ int main( int argc, char *argv[] )
 		  typedef VersorType::VectorType     VectorType;
 		  VersorType     rotation;
 		  VectorType     axis;
-		  axis[0] = 0.0;
-		  axis[1] = 0.0;
-		  axis[2] = 1.0;
-		  const double angle = 0;
+		  axis[0] = x;
+		  axis[1] = y;
+		  axis[2] = z;
+		  const double angle = theta;
 		  rotation.Set(  axis, angle  );
-		  initialTransform1->SetRotation( rotation );
+		  initialTransform3->SetRotation( rotation );
 
 		  registration->SetInitialTransform( initialTransform1 );
-		  registration->InPlaceOn();
+		  //registration->InPlaceOn();
 	  } else {
 		  outputTransform1 = outputTransform->Clone();
 		  initializer->SetTransform(   outputTransform1 );
@@ -767,7 +781,7 @@ int main( int argc, char *argv[] )
 	  shrinkFactorsPerLevel.SetSize( numberOfLevels1 );
 	  shrinkFactorsPerLevel[0] = 1;
 	  smoothingSigmasPerLevel.SetSize( numberOfLevels1 );
-	  smoothingSigmasPerLevel[0] = 0;
+	  smoothingSigmasPerLevel[0] = 1;
 
 	  registration->SetNumberOfLevels( numberOfLevels1 );
 	  registration->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
@@ -891,6 +905,9 @@ int main( int argc, char *argv[] )
 	  }
 
 	  transformParameters = outputTransform->GetParameters();
+	  std::cout << outputTransform->GetCenter() << std::endl;
+	  std::cout << outputTransform->GetMatrix() << std::endl;
+	  std::cout << outputTransform->GetOffset() << std::endl;
 	  outputTransform->GetInverse(inverseOutputTransform);
 
       outfile3 << movedImageName << std::endl;

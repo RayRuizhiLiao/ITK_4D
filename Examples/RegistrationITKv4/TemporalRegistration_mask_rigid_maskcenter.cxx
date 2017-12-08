@@ -74,6 +74,8 @@
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 #include "itkImageMaskSpatialObject.h"
+#include "itkMaskImageFilter.h"
+#include "itkImageMomentsCalculator.h"
 
 #include "itkResampleImageFilter.h"
 #include "itkCastImageFilter.h"
@@ -261,6 +263,10 @@ protected:
 public:
   typedef itk::LBFGSBOptimizerv4       OptimizerType;
   typedef   const OptimizerType *                               OptimizerPointer;
+  void SetOutputOptimizationLog (std::string outputFile) {
+	  this->outputOptimizationLog = outputFile;
+  }
+  std::string outputOptimizationLog;
 
   void Execute(itk::Object *caller, const itk::EventObject & event) ITK_OVERRIDE
   {
@@ -270,17 +276,18 @@ public:
   void Execute(const itk::Object * object, const itk::EventObject & event) ITK_OVERRIDE
   {
   std::ofstream outfile2;
-  outfile2.open("out2.txt", std::ofstream::out|std::ofstream::app);
+  outfile2.open(this->outputOptimizationLog.c_str(), std::ofstream::out|std::ofstream::app);
 
   OptimizerPointer optimizer = static_cast< OptimizerPointer >( object );
   if( !(itk::IterationEvent().CheckEvent( &event )) )
     {
     return;
     }
-  outfile2 << optimizer->GetCurrentIteration() << "   ";
-  outfile2 << optimizer->GetValue() << "   ";
-  outfile2 << optimizer->GetCurrentPosition() << "   ";
-  outfile2 << m_CumulativeIterationIndex++ << std::endl;
+  std::cout << optimizer->GetCurrentIteration() << "   ";
+  std::cout << optimizer->GetValue() << "   ";
+  std::cout << optimizer->GetCurrentPosition() << "   ";
+  std::cout << optimizer->GetCachedDerivative() << "   ";
+  std::cout << m_CumulativeIterationIndex++ << std::endl;
   outfile2.close();
   }
 private:
@@ -342,6 +349,7 @@ int main( int argc, char *argv[] )
   typedef itk::ImageRegistrationMethodv4<
                                     FixedImageType,
                                     MovingImageType >    RegistrationType;
+  typedef itk::MaskImageFilter< MovingImageType, MaskImageType > MaskFileterType;
 
   MetricType::Pointer         metric        = MetricType::New();
   OptimizerType::Pointer      optimizer     = OptimizerType::New();
@@ -367,47 +375,118 @@ int main( int argc, char *argv[] )
 
   OptimizerType::ParametersType transformParameters;
 
+  MaskFileterType::Pointer maskFilter = MaskFileterType::New();
+
   std::string outputFolder(argv[1]);
 
   maskImageReader->SetFileName( argv[3] );
 
   std::ofstream outfile;
-  outfile.open("out1.txt", std::ofstream::out|std::ofstream::app);
+  std::string outputMetricValues = outputFolder + "metric_values.txt";
+  outfile.open(outputMetricValues.c_str(), std::ofstream::out|std::ofstream::app);
+
+  std::ofstream outfile3;
+  std::string outputTransformParameters = outputFolder + "transform_parameters.txt";
+  outfile3.open(outputTransformParameters.c_str(), std::ofstream::out|std::ofstream::app);
+
+  std::ofstream outfile4;
+  std::string outputValidPoints = outputFolder + "valid_points.txt";
+  outfile4.open(outputValidPoints.c_str(), std::ofstream::out|std::ofstream::app);
+
 
   //outfile << "This is called!" << scanIt.GetIndex()[0] << " " << scanIt.GetIndex()[1] << " " << scanIt.GetIndex()[2] << " valid or not: " << pointIsValid << std::endl;
+
+  double w1;
+  std::sscanf(argv[4], "%lf", &w1);
+  double w2;
+  std::sscanf(argv[5], "%lf", &w2);
+
+  metric->SetTemporalSmoothness1(w1);
+  metric->SetTemporalSmoothness2(w2);
+
+  double* t = new double[6];
+  for (int i=0; i<6; i++)
+  {
+	  t[i] = 0;
+  }
+  metric->SetPreviousTransformParameters(t, 6);
+
+  // Software Guide : BeginCodeSnippet
+  TransformType::Pointer  outputTransform1 = TransformType::New();
+  TransformType::Pointer  outputTransform2 = TransformType::New();
+  TransformType::Pointer  outputTransform3 = TransformType::New();
+  TransformType::Pointer  outputTransform = TransformType::New();
+  TransformType::Pointer  inverseOutputTransform = TransformType::New();
+
+  TransformType::Pointer  initialTransform1 = TransformType::New();
+  TransformType::Pointer  initialTransform2 = TransformType::New();
+  TransformType::Pointer  initialTransform3 = TransformType::New();
+
+  double numberOfValidPoints = -1;
+
+  double x = 0;
+  double y = 0;
+  double z = 0;
+  double theta = 0;
+  std::sscanf(argv[6+numOfImages], "%lf", &x);
+  std::sscanf(argv[7+numOfImages], "%lf", &y);
+  std::sscanf(argv[8+numOfImages], "%lf", &z);
+  std::sscanf(argv[9+numOfImages], "%lf", &theta);
 
 
   for (int imageIndex=1; imageIndex<numOfImages; imageIndex++) {
 
 
-	  fixedImageReader->SetFileName(  argv[4] );
-	  movingImageReader->SetFileName( argv[4+imageIndex] );
+	  movingImageReader->SetFileName(  argv[6] );
+	  fixedImageReader->SetFileName( argv[6+imageIndex] );
 
-	  std::string fixedImageName(argv[4]);
+	  std::string movingImageName(argv[6]);
 	  std::string slash = "/";
-	  std::size_t fixedSlashIndex = fixedImageName.find(slash, fixedImageName.length()-25);
-	  std::string movingImageName(argv[4+imageIndex]);
-	  std::size_t movingSlashIndex = movingImageName.find(slash, movingImageName.length()-25);
+	  std::size_t movingSlashIndex = movingImageName.find_last_of(slash);
+	  std::string fixedImageName(argv[6+imageIndex]);
+	  std::size_t fixedSlashIndex = fixedImageName.find_last_of(slash);
 
 	  std::string movedImageName = outputFolder + movingImageName.substr(movingSlashIndex+1, movingImageName.length()-movingSlashIndex-8) + "_to_" + fixedImageName.substr(fixedSlashIndex+1, fixedImageName.length()-fixedSlashIndex-8) + ".nii.gz";
 	  std::cout << "Moved Image Name: " << movedImageName << std::endl;
 	  std::string warpFieldName = outputFolder + movingImageName.substr(movingSlashIndex+1, movingImageName.length()-movingSlashIndex-8) + "_to_" + fixedImageName.substr(fixedSlashIndex+1, fixedImageName.length()-fixedSlashIndex-8) + "_warp.nii.gz";
 	  std::cout << "Warp Image Name: " << warpFieldName << std::endl;
 
+	  std::string inverseMovedImageName = outputFolder + fixedImageName.substr(fixedSlashIndex+1, fixedImageName.length()-fixedSlashIndex-8) + "_to_" + movingImageName.substr(movingSlashIndex+1, movingImageName.length()-movingSlashIndex-8) + ".nii.gz";
+	  std::cout << "Inverse Moved Image Name: " << inverseMovedImageName << std::endl;
+	  std::string inverseWarpFieldName = outputFolder + fixedImageName.substr(fixedSlashIndex+1, fixedImageName.length()-fixedSlashIndex-8) + "_to_" + movingImageName.substr(movingSlashIndex+1, movingImageName.length()-movingSlashIndex-8) + "_inverseWarp.nii.gz";
+	  std::cout << "Inverse Warp Image Name: " << inverseWarpFieldName << std::endl;
+
 	  std::ofstream outfile2;
-	  outfile2.open("out2.txt", std::ofstream::out|std::ofstream::app);
+	  std::string outputOptimizationLog = outputFolder + "optimization_log.txt";
+	  outfile2.open(outputOptimizationLog.c_str(), std::ofstream::out|std::ofstream::app);
       outfile2 << movedImageName << std::endl;
       outfile2.close();
 
 	  FixedImageType::ConstPointer fixedImage = fixedImageReader->GetOutput();
+	  MovingImageType::ConstPointer movingImage = movingImageReader->GetOutput();
+	  MaskImageType::ConstPointer maskImage = maskImageReader->GetOutput();
+
+	  maskImageReader->Update();
+	  fixedImageReader->Update();
+	  movingImageReader->Update();
 
 	  registration->SetFixedImage(  fixedImage   );
-	  registration->SetMovingImage(   movingImageReader->GetOutput()   );
-	  maskImageReader->Update();
+	  registration->SetMovingImage(   movingImage   );
 	  spatialObjectMask->SetImage( maskImageReader->GetOutput() );
 	  metric->SetFixedImageMask(spatialObjectMask);
 
-	  fixedImageReader->Update();
+	  maskFilter->SetInput( fixedImage );
+	  maskFilter->SetMaskImage( maskImage );
+	  MovingImageType::ConstPointer maskedMovingImage = maskFilter->GetOutput();
+	  maskFilter->Update();
+
+	  typedef itk::ImageMomentsCalculator< MovingImageType > MovingImageCalculatorType;
+	  MovingImageCalculatorType::Pointer movingCalculator = MovingImageCalculatorType::New();
+	  movingCalculator->SetImage( maskedMovingImage );
+	  movingCalculator->Compute();
+
+	  MovingImageCalculatorType::VectorType movingCenter = movingCalculator->GetCenterOfGravity();
+	  std::cout << movingCenter << std::endl;
 
 	  //  Software Guide : BeginLatex
 	  //
@@ -420,16 +499,11 @@ int main( int argc, char *argv[] )
 	  //  Software Guide : EndLatex
 
 
+	  metric->SetPreviousNumberOfValidPoints(numberOfValidPoints);
 
-	  // Software Guide : BeginCodeSnippet
-	  TransformType::Pointer  outputTransform1 = TransformType::New();
-	  TransformType::Pointer  outputTransform2 = TransformType::New();
-	  TransformType::Pointer  outputTransform3 = TransformType::New();
-	  TransformType::Pointer  outputTransform = TransformType::New();
+	  outfile3 << outputTransform->GetParameters() << std::endl;
 
-	  TransformType::Pointer  initialTransform1 = TransformType::New();
-	  TransformType::Pointer  initialTransform2 = TransformType::New();
-	  TransformType::Pointer  initialTransform3 = TransformType::New();
+	  outfile4 << metric->GetPreviousNumberOfValidPoints() << std::endl;
 
 	  // Initialize the transform
 	  typedef itk::CenteredTransformInitializer<
@@ -442,22 +516,27 @@ int main( int argc, char *argv[] )
 		  initializer->SetTransform(   initialTransform3 );
 	      initializer->SetFixedImage(  fixedImageReader->GetOutput() );
 	      initializer->SetMovingImage( movingImageReader->GetOutput() );
-		  initializer->MomentsOn();
+	      //initializer->MomentsOn();
 		  initializer->InitializeTransform();
 
 		  typedef TransformType::VersorType  VersorType;
 		  typedef VersorType::VectorType     VectorType;
 		  VersorType     rotation;
 		  VectorType     axis;
-		  axis[0] = 0.0;
-		  axis[1] = 0.0;
-		  axis[2] = 1.0;
-		  const double angle = 0;
+		  axis[0] = x;
+		  axis[1] = y;
+		  axis[2] = z;
+		  const double angle = theta;
 		  rotation.Set(  axis, angle  );
 		  initialTransform3->SetRotation( rotation );
+		  initialTransform3->SetCenter(movingCenter);
 
 		  registration->SetInitialTransform( initialTransform3 );
-		  registration->InPlaceOn();
+		  std::cout << x << " " << y << " " << z << std::endl;
+		  std::cout << initialTransform3->GetCenter() << std::endl;
+		  std::cout << initialTransform3->GetMatrix() << std::endl;
+		  std::cout << initialTransform3->GetOffset() << std::endl;
+		  //registration->InPlaceOn();
 	  } else {
 		  outputTransform3 = outputTransform->Clone();
 		  initializer->SetTransform(   outputTransform3 );
@@ -482,7 +561,7 @@ int main( int argc, char *argv[] )
 	  smoothingSigmasPerLevel.SetSize( numberOfLevels3 );
 	  smoothingSigmasPerLevel[0] = 4;
 	  smoothingSigmasPerLevel[1] = 2;
-	  smoothingSigmasPerLevel[2] = 1;
+	  smoothingSigmasPerLevel[2] = 0;
 
 	  registration->SetNumberOfLevels( numberOfLevels3 );
 	  registration->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
@@ -529,6 +608,7 @@ int main( int argc, char *argv[] )
 	  }
 
 	  CommandIterationUpdate::Pointer observer = CommandIterationUpdate::New();
+	  observer->SetOutputOptimizationLog(outputOptimizationLog);
 	  optimizer->AddObserver( itk::IterationEvent(), observer );
 
 	  typedef RegistrationInterfaceCommand<RegistrationType> CommandType;
@@ -565,6 +645,7 @@ int main( int argc, char *argv[] )
 		return EXIT_FAILURE;
 		}
 
+	  double numberOfValidPoints3 = metric->GetCurrentNumberOfValidPoints();
 	  double metricValue3 = optimizer->GetCurrentMetricValue();
 	  outfile << metricValue3 <<std::endl;
 
@@ -572,22 +653,23 @@ int main( int argc, char *argv[] )
 		  initializer->SetTransform(   initialTransform2 );
 	      initializer->SetFixedImage(  fixedImageReader->GetOutput() );
 	      initializer->SetMovingImage( movingImageReader->GetOutput() );
-		  initializer->MomentsOn();
+	      //itializer->MomentsOn();
 		  initializer->InitializeTransform();
 
 		  typedef TransformType::VersorType  VersorType;
 		  typedef VersorType::VectorType     VectorType;
 		  VersorType     rotation;
 		  VectorType     axis;
-		  axis[0] = 0.0;
-		  axis[1] = 0.0;
-		  axis[2] = 1.0;
-		  const double angle = 0;
+		  axis[0] = x;
+		  axis[1] = y;
+		  axis[2] = z;
+		  const double angle = theta;
 		  rotation.Set(  axis, angle  );
 		  initialTransform2->SetRotation( rotation );
+		  initialTransform2->SetCenter(movingCenter);
 
 		  registration->SetInitialTransform( initialTransform2 );
-		  registration->InPlaceOn();
+		  //registration->InPlaceOn();
 	  } else {
 		  outputTransform2 = outputTransform->Clone();
 		  initializer->SetTransform(   outputTransform2 );
@@ -608,7 +690,7 @@ int main( int argc, char *argv[] )
 	  shrinkFactorsPerLevel[1] = 1;
 	  smoothingSigmasPerLevel.SetSize( numberOfLevels2 );
 	  smoothingSigmasPerLevel[0] = 2;
-	  smoothingSigmasPerLevel[1] = 1;
+	  smoothingSigmasPerLevel[1] = 0;
 
 	  registration->SetNumberOfLevels( numberOfLevels2 );
 	  registration->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
@@ -647,6 +729,7 @@ int main( int argc, char *argv[] )
 	  }
 
 	  observer = CommandIterationUpdate::New();
+	  observer->SetOutputOptimizationLog(outputOptimizationLog);
 	  optimizer->AddObserver( itk::IterationEvent(), observer );
 
 	  command = CommandType::New();
@@ -678,6 +761,7 @@ int main( int argc, char *argv[] )
 		return EXIT_FAILURE;
 		}
 
+	  double numberOfValidPoints2 = metric->GetCurrentNumberOfValidPoints();
 	  double metricValue2 = optimizer->GetCurrentMetricValue();
 	  outfile << metricValue2 <<std::endl;
 
@@ -685,22 +769,23 @@ int main( int argc, char *argv[] )
 		  initializer->SetTransform(   initialTransform1 );
 	      initializer->SetFixedImage(  fixedImageReader->GetOutput() );
 	      initializer->SetMovingImage( movingImageReader->GetOutput() );
-		  initializer->MomentsOn();
+	      //initializer->MomentsOn();
 		  initializer->InitializeTransform();
 
 		  typedef TransformType::VersorType  VersorType;
 		  typedef VersorType::VectorType     VectorType;
 		  VersorType     rotation;
 		  VectorType     axis;
-		  axis[0] = 0.0;
-		  axis[1] = 0.0;
-		  axis[2] = 1.0;
-		  const double angle = 0;
+		  axis[0] = x;
+		  axis[1] = y;
+		  axis[2] = z;
+		  const double angle = theta;
 		  rotation.Set(  axis, angle  );
 		  initialTransform1->SetRotation( rotation );
+		  initialTransform1->SetCenter(movingCenter);
 
 		  registration->SetInitialTransform( initialTransform1 );
-		  registration->InPlaceOn();
+		  //registration->InPlaceOn();
 	  } else {
 		  outputTransform1 = outputTransform->Clone();
 		  initializer->SetTransform(   outputTransform1 );
@@ -719,7 +804,7 @@ int main( int argc, char *argv[] )
 	  shrinkFactorsPerLevel.SetSize( numberOfLevels1 );
 	  shrinkFactorsPerLevel[0] = 1;
 	  smoothingSigmasPerLevel.SetSize( numberOfLevels1 );
-	  smoothingSigmasPerLevel[0] = 1;
+	  smoothingSigmasPerLevel[0] = 0;
 
 	  registration->SetNumberOfLevels( numberOfLevels1 );
 	  registration->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
@@ -758,6 +843,7 @@ int main( int argc, char *argv[] )
 	  }
 
 	  observer = CommandIterationUpdate::New();
+	  observer->SetOutputOptimizationLog(outputOptimizationLog);
 	  optimizer->AddObserver( itk::IterationEvent(), observer );
 
 	  command = CommandType::New();
@@ -789,6 +875,7 @@ int main( int argc, char *argv[] )
 		return EXIT_FAILURE;
 		}
 
+	  double numberOfValidPoints1 = metric->GetCurrentNumberOfValidPoints();
 	  double metricValue1 = optimizer->GetCurrentMetricValue();
 	  outfile << metricValue1 <<std::endl;
 
@@ -815,25 +902,48 @@ int main( int argc, char *argv[] )
 	  if (imageIndex==1) {
 		  if (metricValue1<=metricValue2&&metricValue1<=metricValue3) {
 			  outputTransform = initialTransform1->Clone();
+			  numberOfValidPoints = numberOfValidPoints1;
 		  }
 		  if (metricValue2<=metricValue1&&metricValue2<=metricValue3) {
 			  outputTransform = initialTransform2->Clone();
+			  numberOfValidPoints = numberOfValidPoints2;
 		  }
 		  if (metricValue3<=metricValue1&&metricValue3<=metricValue2) {
 			  outputTransform = initialTransform3->Clone();
+			  numberOfValidPoints = numberOfValidPoints3;
 		  }
 	  } else {
 		  if (metricValue1<=metricValue2&&metricValue1<=metricValue3) {
 			  outputTransform = outputTransform1->Clone();
+			  numberOfValidPoints = numberOfValidPoints1;
 		  }
 		  if (metricValue2<=metricValue1&&metricValue2<=metricValue3) {
 			  outputTransform = outputTransform2->Clone();
+			  numberOfValidPoints = numberOfValidPoints2;
 		  }
 		  if (metricValue3<=metricValue1&&metricValue3<=metricValue2) {
 			  outputTransform = outputTransform3->Clone();
+			  numberOfValidPoints = numberOfValidPoints3;
 		  }
 	  }
+
 	  transformParameters = outputTransform->GetParameters();
+	  std::cout << outputTransform->GetCenter() << std::endl;
+	  std::cout << outputTransform->GetMatrix() << std::endl;
+	  std::cout << outputTransform->GetOffset() << std::endl;
+	  outputTransform->GetInverse(inverseOutputTransform);
+
+      outfile3 << movedImageName << std::endl;
+      outfile3 << transformParameters << std::endl;
+      outfile3 << inverseOutputTransform->GetParameters() << std::endl;
+
+	  for (int i=0; i<6; i++)
+	  {
+		  t[i] = transformParameters[i];
+	  }
+	  metric->SetPreviousTransformParameters(t, 6);
+	  metric->SetPreviousNumberOfValidPoints(numberOfValidPoints);
+
 	  // Software Guide : EndCodeSnippet
 
 	  // Finally we use the last transform in order to resample the image.
@@ -927,9 +1037,81 @@ int main( int argc, char *argv[] )
 		return EXIT_FAILURE;
 	    }
 
+	  // Finally we use the last inverse transform in order to resample the image.
+	  //
+	  ResampleFilterType::Pointer resample2 = ResampleFilterType::New();
+
+	  resample2->SetTransform( inverseOutputTransform );
+	  resample2->SetInput( fixedImageReader->GetOutput() );
+
+	  resample2->SetSize(    movingImage->GetLargestPossibleRegion().GetSize() );
+	  resample2->SetOutputOrigin(  movingImage->GetOrigin() );
+	  resample2->SetOutputSpacing( movingImage->GetSpacing() );
+	  resample2->SetOutputDirection( movingImage->GetDirection() );
+	  resample2->SetDefaultPixelValue( 0 );
+
+	  WriterType::Pointer      writer2 =  WriterType::New();
+	  CastFilterType::Pointer  caster2 =  CastFilterType::New();
+
+
+	  writer2->SetFileName( inverseMovedImageName );
+
+
+	  caster2->SetInput( resample2->GetOutput() );
+	  writer2->SetInput( caster2->GetOutput()   );
+
+	  try
+		{
+		writer2->Update();
+		}
+	  catch( itk::ExceptionObject & err )
+		{
+		std::cerr << "ExceptionObject caught !" << std::endl;
+		std::cerr << err << std::endl;
+		return EXIT_FAILURE;
+		}
+
+	  // Generate the explicit inverse deformation field resulting from
+	  // the registration.
+
+	  /** Create an setup displacement field generator. */
+	  DisplacementFieldGeneratorType::Pointer dispfieldGenerator2 =
+													 DisplacementFieldGeneratorType::New();
+	  dispfieldGenerator2->UseReferenceImageOn();
+	  dispfieldGenerator2->SetReferenceImage( movingImage );
+	  dispfieldGenerator2->SetTransform( inverseOutputTransform );
+	  try
+		{
+		  dispfieldGenerator2->Update();
+		}
+	  catch ( itk::ExceptionObject & err )
+		{
+		std::cerr << "Exception detected while generating deformation field";
+		std::cerr << " : "  << err << std::endl;
+		return EXIT_FAILURE;
+		}
+
+	  typedef itk::ImageFileWriter< DisplacementFieldImageType >  FieldWriterType;
+	  FieldWriterType::Pointer fieldWriter2 = FieldWriterType::New();
+
+	  fieldWriter2->SetInput( dispfieldGenerator2->GetOutput() );
+	  fieldWriter2->SetFileName( inverseWarpFieldName );
+	  try
+	    {
+		  fieldWriter2->Update();
+	    }
+	  catch( itk::ExceptionObject & excp )
+	    {
+		std::cerr << "Exception thrown " << std::endl;
+		std::cerr << excp << std::endl;
+		return EXIT_FAILURE;
+	    }
+
   }
 
   outfile.close();
+  outfile3.close();
+  outfile4.close();
 
   return EXIT_SUCCESS;
 }
