@@ -644,7 +644,7 @@ int main( int argc, char *argv[] )
 		  axis[2] = z;
 		  const double angle = theta;
 		  rotation.Set(  axis, angle  );
-		  initialTransform3->SetRotation( rotation );
+		  initialTransform2->SetRotation( rotation );
 
 		  registration->SetInitialTransform( initialTransform2 );
 		  //registration->InPlaceOn();
@@ -759,7 +759,7 @@ int main( int argc, char *argv[] )
 		  axis[2] = z;
 		  const double angle = theta;
 		  rotation.Set(  axis, angle  );
-		  initialTransform3->SetRotation( rotation );
+		  initialTransform1->SetRotation( rotation );
 
 		  registration->SetInitialTransform( initialTransform1 );
 		  //registration->InPlaceOn();

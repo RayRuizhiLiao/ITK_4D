@@ -312,7 +312,7 @@ int main( int argc, char *argv[] )
   typedef itk::Image< PixelType, ImageDimension >  FixedImageType;
   typedef itk::Image< PixelType, ImageDimension >  MovingImageType;
   typedef itk::Image< unsigned char, ImageDimension > MaskImageType;
-  typedef itk::ImageMaskSpatialObject< ImageDimension >  FixedImageMaskType;
+  typedef itk::ImageMaskSpatialObject< ImageDimension >  ImageMaskType;
 
 
   //  Software Guide : BeginLatex
@@ -335,12 +335,6 @@ int main( int argc, char *argv[] )
 
 
   typedef itk::LBFGSBOptimizerv4       OptimizerType;
-  //typedef   itk::RegularStepGradientDescentOptimizerv4<double>  OptimizerType;
-
-
-  //typedef itk::MeanSquaresImageToImageMetricv4<
-  //                                  FixedImageType,
-  //                                  MovingImageType >    MetricType;
 
   typedef itk::ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<
                                           FixedImageType,
@@ -349,6 +343,7 @@ int main( int argc, char *argv[] )
   typedef itk::ImageRegistrationMethodv4<
                                     FixedImageType,
                                     MovingImageType >    RegistrationType;
+
   typedef itk::MaskImageFilter< MovingImageType, MaskImageType > MaskFileterType;
 
   MetricType::Pointer         metric        = MetricType::New();
@@ -369,9 +364,11 @@ int main( int argc, char *argv[] )
 
   FixedImageReaderType::Pointer  fixedImageReader  = FixedImageReaderType::New();
   MovingImageReaderType::Pointer movingImageReader = MovingImageReaderType::New();
-  MaskImageReaderType::Pointer  maskImageReader  = MaskImageReaderType::New();
+  MaskImageReaderType::Pointer  fixedMaskImageReader  = MaskImageReaderType::New();
+  MaskImageReaderType::Pointer  movingMaskImageReader  = MaskImageReaderType::New();
 
-  FixedImageMaskType::Pointer spatialObjectMask = FixedImageMaskType::New();
+  ImageMaskType::Pointer spatialObjectFixedMask = ImageMaskType::New();
+  ImageMaskType::Pointer spatialObjectMovingMask = ImageMaskType::New();
 
   OptimizerType::ParametersType transformParameters;
 
@@ -379,7 +376,9 @@ int main( int argc, char *argv[] )
 
   std::string outputFolder(argv[1]);
 
-  maskImageReader->SetFileName( argv[3] );
+  fixedMaskImageReader->SetFileName( argv[3] );
+  movingMaskImageReader->SetFileName( argv[4] );
+
 
   std::ofstream outfile;
   std::string outputMetricValues = outputFolder + "metric_values.txt";
@@ -393,13 +392,10 @@ int main( int argc, char *argv[] )
   std::string outputValidPoints = outputFolder + "valid_points.txt";
   outfile4.open(outputValidPoints.c_str(), std::ofstream::out|std::ofstream::app);
 
-
-  //outfile << "This is called!" << scanIt.GetIndex()[0] << " " << scanIt.GetIndex()[1] << " " << scanIt.GetIndex()[2] << " valid or not: " << pointIsValid << std::endl;
-
   double w1;
-  std::sscanf(argv[4], "%lf", &w1);
+  std::sscanf(argv[5], "%lf", &w1);
   double w2;
-  std::sscanf(argv[5], "%lf", &w2);
+  std::sscanf(argv[6], "%lf", &w2);
 
   metric->SetTemporalSmoothness1(w1);
   metric->SetTemporalSmoothness2(w2);
@@ -424,26 +420,16 @@ int main( int argc, char *argv[] )
 
   double numberOfValidPoints = -1;
 
-  double x = 0;
-  double y = 0;
-  double z = 0;
-  double theta = 0;
-  std::sscanf(argv[6+numOfImages], "%lf", &x);
-  std::sscanf(argv[7+numOfImages], "%lf", &y);
-  std::sscanf(argv[8+numOfImages], "%lf", &z);
-  std::sscanf(argv[9+numOfImages], "%lf", &theta);
-
-
   for (int imageIndex=1; imageIndex<numOfImages; imageIndex++) {
 
 
-	  movingImageReader->SetFileName(  argv[6] );
-	  fixedImageReader->SetFileName( argv[6+imageIndex] );
+	  movingImageReader->SetFileName(  argv[7+imageIndex] );
+	  fixedImageReader->SetFileName( argv[7] );
 
-	  std::string movingImageName(argv[6]);
+	  std::string movingImageName(argv[7+imageIndex]);
 	  std::string slash = "/";
 	  std::size_t movingSlashIndex = movingImageName.find_last_of(slash);
-	  std::string fixedImageName(argv[6+imageIndex]);
+	  std::string fixedImageName(argv[7]);
 	  std::size_t fixedSlashIndex = fixedImageName.find_last_of(slash);
 
 	  std::string movedImageName = outputFolder + movingImageName.substr(movingSlashIndex+1, movingImageName.length()-movingSlashIndex-8) + "_to_" + fixedImageName.substr(fixedSlashIndex+1, fixedImageName.length()-fixedSlashIndex-8) + ".nii.gz";
@@ -464,29 +450,33 @@ int main( int argc, char *argv[] )
 
 	  FixedImageType::ConstPointer fixedImage = fixedImageReader->GetOutput();
 	  MovingImageType::ConstPointer movingImage = movingImageReader->GetOutput();
-	  MaskImageType::ConstPointer maskImage = maskImageReader->GetOutput();
+	  MaskImageType::ConstPointer fixedMaskImage = fixedMaskImageReader->GetOutput();
+	  MaskImageType::ConstPointer movingMaskImage = movingMaskImageReader->GetOutput();
 
-	  maskImageReader->Update();
+	  fixedMaskImageReader->Update();
+	  movingMaskImageReader->Update();
 	  fixedImageReader->Update();
 	  movingImageReader->Update();
 
 	  registration->SetFixedImage(  fixedImage   );
 	  registration->SetMovingImage(   movingImage   );
-	  spatialObjectMask->SetImage( maskImageReader->GetOutput() );
-	  metric->SetFixedImageMask(spatialObjectMask);
+	  spatialObjectFixedMask->SetImage( fixedMaskImage );
+	  spatialObjectMovingMask->SetImage( movingMaskImage );
+	  metric->SetFixedImageMask(spatialObjectFixedMask);
+	  //metric->SetMovingImageMask(spatialObjectMovingMask);
 
 	  maskFilter->SetInput( fixedImage );
-	  maskFilter->SetMaskImage( maskImage );
-	  MovingImageType::ConstPointer maskedMovingImage = maskFilter->GetOutput();
+	  maskFilter->SetMaskImage( fixedMaskImage );
+	  MovingImageType::ConstPointer maskedFixedImage = maskFilter->GetOutput();
 	  maskFilter->Update();
 
-	  typedef itk::ImageMomentsCalculator< MovingImageType > MovingImageCalculatorType;
-	  MovingImageCalculatorType::Pointer movingCalculator = MovingImageCalculatorType::New();
-	  movingCalculator->SetImage( maskedMovingImage );
-	  movingCalculator->Compute();
+	  typedef itk::ImageMomentsCalculator< FixedImageType > FixedImageCalculatorType;
+	  FixedImageCalculatorType::Pointer FixedImageCalculator = FixedImageCalculatorType::New();
+	  FixedImageCalculator->SetImage( maskedFixedImage );
+	  FixedImageCalculator->Compute();
 
-	  MovingImageCalculatorType::VectorType movingCenter = movingCalculator->GetCenterOfGravity();
-	  std::cout << movingCenter << std::endl;
+	  FixedImageCalculatorType::VectorType movingCenter = FixedImageCalculator->GetCenterOfGravity();
+	  std::cout << "Moving Center: " << movingCenter << std::endl;
 
 	  //  Software Guide : BeginLatex
 	  //
@@ -498,11 +488,7 @@ int main( int argc, char *argv[] )
 	  //
 	  //  Software Guide : EndLatex
 
-
-	  metric->SetPreviousNumberOfValidPoints(numberOfValidPoints);
-
 	  outfile3 << outputTransform->GetParameters() << std::endl;
-
 	  outfile4 << metric->GetPreviousNumberOfValidPoints() << std::endl;
 
 	  // Initialize the transform
@@ -514,37 +500,34 @@ int main( int argc, char *argv[] )
 
 	  if (imageIndex==1) {
 		  initializer->SetTransform(   initialTransform3 );
-	      initializer->SetFixedImage(  fixedImageReader->GetOutput() );
-	      initializer->SetMovingImage( movingImageReader->GetOutput() );
-	      //initializer->MomentsOn();
+	      initializer->SetFixedImage(  fixedImage );
+	      initializer->SetMovingImage( movingImage );
+	      initializer->MomentsOn();
 		  initializer->InitializeTransform();
 
 		  typedef TransformType::VersorType  VersorType;
 		  typedef VersorType::VectorType     VectorType;
 		  VersorType     rotation;
 		  VectorType     axis;
-		  axis[0] = x;
-		  axis[1] = y;
-		  axis[2] = z;
-		  const double angle = theta;
+		  axis[0] = 0;
+		  axis[1] = 0;
+		  axis[2] = 1;
+		  const double angle = 0;
 		  rotation.Set(  axis, angle  );
 		  initialTransform3->SetRotation( rotation );
 		  initialTransform3->SetCenter(movingCenter);
 
 		  registration->SetInitialTransform( initialTransform3 );
-		  std::cout << x << " " << y << " " << z << std::endl;
-		  std::cout << initialTransform3->GetCenter() << std::endl;
-		  std::cout << initialTransform3->GetMatrix() << std::endl;
-		  std::cout << initialTransform3->GetOffset() << std::endl;
-		  //registration->InPlaceOn();
+		  registration->InPlaceOn();
 	  } else {
 		  outputTransform3 = outputTransform->Clone();
 		  initializer->SetTransform(   outputTransform3 );
-		  initializer->SetFixedImage(  fixedImageReader->GetOutput() );
-		  initializer->SetMovingImage( movingImageReader->GetOutput() );
+		  initializer->SetFixedImage(  fixedImage );
+		  initializer->SetMovingImage( movingImage );
 		  initializer->InitializeTransform();
 
 		  registration->SetInitialTransform( outputTransform3 );
+		  registration->InPlaceOn();
 	  }
 
 	  //  A single level registration process is run using
@@ -598,9 +581,7 @@ int main( int argc, char *argv[] )
 	  optimizer->SetNumberOfIterations( 30 );
 	  optimizer->SetMaximumNumberOfFunctionEvaluations( 200 );
 	  optimizer->SetMaximumNumberOfCorrections( 6 );
-	  //optimizer->SetNumberOfThreads(1);
-	  //registration->SetNumberOfThreads(1);
-	  //metric->SetMaximumNumberOfThreads(1);
+
 	  if (imageIndex==1) {
 	  	  optimizer->SetInitialPosition(initialTransform3->GetParameters());
 	  } else {
@@ -645,39 +626,39 @@ int main( int argc, char *argv[] )
 		return EXIT_FAILURE;
 		}
 
-	  double numberOfValidPoints3 = metric->GetCurrentNumberOfValidPoints();
 	  double metricValue3 = optimizer->GetCurrentMetricValue();
 	  outfile << metricValue3 <<std::endl;
 
 	  if (imageIndex==1) {
 		  initializer->SetTransform(   initialTransform2 );
-	      initializer->SetFixedImage(  fixedImageReader->GetOutput() );
-	      initializer->SetMovingImage( movingImageReader->GetOutput() );
-	      //itializer->MomentsOn();
+	      initializer->SetFixedImage(  fixedImage );
+	      initializer->SetMovingImage( movingImage );
+	      initializer->MomentsOn();
 		  initializer->InitializeTransform();
 
 		  typedef TransformType::VersorType  VersorType;
 		  typedef VersorType::VectorType     VectorType;
 		  VersorType     rotation;
 		  VectorType     axis;
-		  axis[0] = x;
-		  axis[1] = y;
-		  axis[2] = z;
-		  const double angle = theta;
+		  axis[0] = 0;
+		  axis[1] = 0;
+		  axis[2] = 1;
+		  const double angle = 0;
 		  rotation.Set(  axis, angle  );
 		  initialTransform2->SetRotation( rotation );
 		  initialTransform2->SetCenter(movingCenter);
 
 		  registration->SetInitialTransform( initialTransform2 );
-		  //registration->InPlaceOn();
+		  registration->InPlaceOn();
 	  } else {
 		  outputTransform2 = outputTransform->Clone();
 		  initializer->SetTransform(   outputTransform2 );
-		  initializer->SetFixedImage(  fixedImageReader->GetOutput() );
-		  initializer->SetMovingImage( movingImageReader->GetOutput() );
+	      initializer->SetFixedImage(  fixedImage );
+	      initializer->SetMovingImage( movingImage );
 		  initializer->InitializeTransform();
 
 		  registration->SetInitialTransform( outputTransform2 );
+		  registration->InPlaceOn();
 	  }
 
 	  //  A single level registration process is run using
@@ -719,9 +700,7 @@ int main( int argc, char *argv[] )
 	  optimizer->SetNumberOfIterations( 30 );
 	  optimizer->SetMaximumNumberOfFunctionEvaluations( 200 );
 	  optimizer->SetMaximumNumberOfCorrections( 6 );
-	  //optimizer->SetNumberOfThreads(1);
-	  //registration->SetNumberOfThreads(1);
-	  //metric->SetMaximumNumberOfThreads(1);
+
 	  if (imageIndex==1) {
 	  	  optimizer->SetInitialPosition(initialTransform2->GetParameters());
 	  } else {
@@ -761,39 +740,39 @@ int main( int argc, char *argv[] )
 		return EXIT_FAILURE;
 		}
 
-	  double numberOfValidPoints2 = metric->GetCurrentNumberOfValidPoints();
 	  double metricValue2 = optimizer->GetCurrentMetricValue();
 	  outfile << metricValue2 <<std::endl;
 
 	  if (imageIndex==1) {
 		  initializer->SetTransform(   initialTransform1 );
-	      initializer->SetFixedImage(  fixedImageReader->GetOutput() );
-	      initializer->SetMovingImage( movingImageReader->GetOutput() );
-	      //initializer->MomentsOn();
+	      initializer->SetFixedImage(  fixedImage );
+	      initializer->SetMovingImage( movingImage );
+	      initializer->MomentsOn();
 		  initializer->InitializeTransform();
 
 		  typedef TransformType::VersorType  VersorType;
 		  typedef VersorType::VectorType     VectorType;
 		  VersorType     rotation;
 		  VectorType     axis;
-		  axis[0] = x;
-		  axis[1] = y;
-		  axis[2] = z;
-		  const double angle = theta;
+		  axis[0] = 0;
+		  axis[1] = 0;
+		  axis[2] = 1;
+		  const double angle = 0;
 		  rotation.Set(  axis, angle  );
 		  initialTransform1->SetRotation( rotation );
 		  initialTransform1->SetCenter(movingCenter);
 
 		  registration->SetInitialTransform( initialTransform1 );
-		  //registration->InPlaceOn();
+		  registration->InPlaceOn();
 	  } else {
 		  outputTransform1 = outputTransform->Clone();
 		  initializer->SetTransform(   outputTransform1 );
-		  initializer->SetFixedImage(  fixedImageReader->GetOutput() );
-		  initializer->SetMovingImage( movingImageReader->GetOutput() );
+	      initializer->SetFixedImage(  fixedImage );
+	      initializer->SetMovingImage( movingImage );
 		  initializer->InitializeTransform();
 
 		  registration->SetInitialTransform( outputTransform1 );
+		  registration->InPlaceOn();
 	  }
 
 	  //  A single level registration process is run using
@@ -833,9 +812,7 @@ int main( int argc, char *argv[] )
 	  optimizer->SetNumberOfIterations( 30 );
 	  optimizer->SetMaximumNumberOfFunctionEvaluations( 200 );
 	  optimizer->SetMaximumNumberOfCorrections( 6 );
-	  //optimizer->SetNumberOfThreads(1);
-	  //registration->SetNumberOfThreads(1);
-	  //metric->SetMaximumNumberOfThreads(1);
+
 	  if (imageIndex==1) {
 	  	  optimizer->SetInitialPosition(initialTransform1->GetParameters());
 	  } else {
@@ -875,7 +852,6 @@ int main( int argc, char *argv[] )
 		return EXIT_FAILURE;
 		}
 
-	  double numberOfValidPoints1 = metric->GetCurrentNumberOfValidPoints();
 	  double metricValue1 = optimizer->GetCurrentMetricValue();
 	  outfile << metricValue1 <<std::endl;
 
@@ -902,28 +878,22 @@ int main( int argc, char *argv[] )
 	  if (imageIndex==1) {
 		  if (metricValue1<=metricValue2&&metricValue1<=metricValue3) {
 			  outputTransform = initialTransform1->Clone();
-			  numberOfValidPoints = numberOfValidPoints1;
 		  }
 		  if (metricValue2<=metricValue1&&metricValue2<=metricValue3) {
 			  outputTransform = initialTransform2->Clone();
-			  numberOfValidPoints = numberOfValidPoints2;
 		  }
 		  if (metricValue3<=metricValue1&&metricValue3<=metricValue2) {
 			  outputTransform = initialTransform3->Clone();
-			  numberOfValidPoints = numberOfValidPoints3;
 		  }
 	  } else {
 		  if (metricValue1<=metricValue2&&metricValue1<=metricValue3) {
 			  outputTransform = outputTransform1->Clone();
-			  numberOfValidPoints = numberOfValidPoints1;
 		  }
 		  if (metricValue2<=metricValue1&&metricValue2<=metricValue3) {
 			  outputTransform = outputTransform2->Clone();
-			  numberOfValidPoints = numberOfValidPoints2;
 		  }
 		  if (metricValue3<=metricValue1&&metricValue3<=metricValue2) {
 			  outputTransform = outputTransform3->Clone();
-			  numberOfValidPoints = numberOfValidPoints3;
 		  }
 	  }
 
@@ -955,7 +925,7 @@ int main( int argc, char *argv[] )
 	  ResampleFilterType::Pointer resample = ResampleFilterType::New();
 
 	  resample->SetTransform( outputTransform );
-	  resample->SetInput( movingImageReader->GetOutput() );
+	  resample->SetInput( movingImage );
 
 	  resample->SetSize(    fixedImage->GetLargestPossibleRegion().GetSize() );
 	  resample->SetOutputOrigin(  fixedImage->GetOrigin() );
@@ -1042,7 +1012,7 @@ int main( int argc, char *argv[] )
 	  ResampleFilterType::Pointer resample2 = ResampleFilterType::New();
 
 	  resample2->SetTransform( inverseOutputTransform );
-	  resample2->SetInput( fixedImageReader->GetOutput() );
+	  resample2->SetInput( fixedImage );
 
 	  resample2->SetSize(    movingImage->GetLargestPossibleRegion().GetSize() );
 	  resample2->SetOutputOrigin(  movingImage->GetOrigin() );

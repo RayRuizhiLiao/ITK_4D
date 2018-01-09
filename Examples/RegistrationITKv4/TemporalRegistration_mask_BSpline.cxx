@@ -192,7 +192,7 @@ public:
     std::cout << "    smoothing sigma = " << smoothingSigmas[currentLevel] << std::endl;
     try {
     std::cout << optimizer->GetCurrentIteration() << "   ";
-    std::cout << optimizer->GetValue() << "   ";
+    std::cout << optimizer->GetValue() << std::endl;
     //std::cout << optimizer->GetCurrentPosition() << std::endl;
     }
     catch(itk::ExceptionObject)
@@ -340,12 +340,6 @@ int main( int argc, char *argv[] )
 
 
   typedef itk::LBFGSBOptimizerv4       OptimizerType;
-  //typedef   itk::RegularStepGradientDescentOptimizerv4<double>  OptimizerType;
-
-
-  //typedef itk::MeanSquaresImageToImageMetricv4<
-  //                                  FixedImageType,
-  //                                  MovingImageType >    MetricType;
 
   typedef itk::ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<
                                           FixedImageType,
@@ -354,14 +348,6 @@ int main( int argc, char *argv[] )
   typedef itk::ImageRegistrationMethodv4<
                                     FixedImageType,
                                     MovingImageType >    RegistrationType;
-
-  MetricType::Pointer         metric        = MetricType::New();
-  OptimizerType::Pointer      optimizer     = OptimizerType::New();
-  RegistrationType::Pointer   registration  = RegistrationType::New();
-
-
-  registration->SetMetric(        metric        );
-  registration->SetOptimizer(     optimizer     );
 
   int numOfImages  = 0;
   std::sscanf(argv[2], "%d", &numOfImages);
@@ -395,36 +381,21 @@ int main( int argc, char *argv[] )
   std::string outputValidPoints = outputFolder + "valid_points.txt";
   outfile4.open(outputValidPoints.c_str(), std::ofstream::out|std::ofstream::app);
 
-
-  //outfile << "This is called!" << scanIt.GetIndex()[0] << " " << scanIt.GetIndex()[1] << " " << scanIt.GetIndex()[2] << " valid or not: " << pointIsValid << std::endl;
-
   double w1;
   std::sscanf(argv[4], "%lf", &w1);
   double w2;
   std::sscanf(argv[5], "%lf", &w2);
-
-  metric->SetTemporalSmoothness1(w1);
-  metric->SetTemporalSmoothness2(w2);
 
   double* t = new double[6];
   for (int i=0; i<6; i++)
   {
 	  t[i] = 0;
   }
-  metric->SetPreviousTransformParameters(t, 6);
 
   // Software Guide : BeginCodeSnippet
-  TransformType::Pointer  outputTransform1 = TransformType::New();
-  TransformType::Pointer  outputTransform2 = TransformType::New();
-  TransformType::Pointer  outputTransform3 = TransformType::New();
   TransformType::Pointer  outputTransform = TransformType::New();
   TransformType::Pointer  inverseOutputTransform = TransformType::New();
-
-  TransformType::Pointer  initialTransform1 = TransformType::New();
-  TransformType::Pointer  initialTransform2 = TransformType::New();
-  TransformType::Pointer  initialTransform3 = TransformType::New();
-
-  double numberOfValidPoints = -1;
+  TransformType::Pointer  initialTransform = TransformType::New();
 
   for (int imageIndex=1; imageIndex<numOfImages; imageIndex++) {
 
@@ -454,16 +425,30 @@ int main( int argc, char *argv[] )
       outfile2 << movedImageName << std::endl;
       outfile2.close();
 
-	  FixedImageType::ConstPointer fixedImage = fixedImageReader->GetOutput();
-	  FixedImageType::ConstPointer movingImage = movingImageReader->GetOutput();
+      MetricType::Pointer         metric        = MetricType::New();
+      OptimizerType::Pointer      optimizer     = OptimizerType::New();
+      RegistrationType::Pointer   registration  = RegistrationType::New();
 
-	  registration->SetFixedImage(  fixedImage   );
-	  registration->SetMovingImage(   movingImageReader->GetOutput()   );
-	  maskImageReader->Update();
-	  spatialObjectMask->SetImage( maskImageReader->GetOutput() );
-	  metric->SetMovingImageMask(spatialObjectMask);
+      registration->SetMetric(        metric        );
+      registration->SetOptimizer(     optimizer     );
+
+      metric->SetTemporalSmoothness1(w1);
+      metric->SetTemporalSmoothness2(w2);
+      metric->SetPreviousTransformParameters(t, 6);
+
+	  FixedImageType::ConstPointer fixedImage = fixedImageReader->GetOutput();
+	  MovingImageType::ConstPointer movingImage = movingImageReader->GetOutput();
+	  MaskImageType::ConstPointer maskImage = maskImageReader->GetOutput();
 
 	  fixedImageReader->Update();
+	  movingImageReader->Update();
+	  maskImageReader->Update();
+
+	  registration->SetFixedImage(  fixedImage   );
+	  registration->SetMovingImage(   movingImage   );
+	  spatialObjectMask->SetImage( maskImage );
+	  metric->SetMovingImageMask(spatialObjectMask);
+
 
 	  //  Software Guide : BeginLatex
 	  //
@@ -476,10 +461,7 @@ int main( int argc, char *argv[] )
 	  //  Software Guide : EndLatex
 
 
-	  metric->SetPreviousNumberOfValidPoints(numberOfValidPoints);
-
 	  outfile3 << outputTransform->GetParameters() << std::endl;
-
 	  outfile4 << metric->GetPreviousNumberOfValidPoints() << std::endl;
 
 	  // Initialize the transform
@@ -490,28 +472,28 @@ int main( int argc, char *argv[] )
 	  //unsigned int numberOfGridNodesInOneDimension = 8;
 
 	  TransformType::MeshSizeType             meshSize;
-	  meshSize.SetElement(0, 10);
-	  meshSize.SetElement(1, 10);
-	  meshSize.SetElement(2, 8);
+	  meshSize.SetElement(0, 7);
+	  meshSize.SetElement(1, 7);
+	  meshSize.SetElement(2, 5);
 	  //meshSize.Fill( numberOfGridNodesInOneDimension - SplineOrder );
 
-
 	  if (imageIndex==1) {
-		  transformInitializer->SetTransform(   initialTransform3 );
+		  transformInitializer->SetTransform(   initialTransform );
 		  transformInitializer->SetImage(  fixedImageReader->GetOutput() );
 		  transformInitializer->SetTransformDomainMeshSize( meshSize );
 		  transformInitializer->InitializeTransform();
 
-		  registration->SetInitialTransform( initialTransform3 );
-		  //registration->InPlaceOn();
+		  registration->SetInitialTransform( initialTransform );
+		  registration->InPlaceOn();
 	  } else {
-		  outputTransform3 = outputTransform->Clone();
-		  transformInitializer->SetTransform(   initialTransform3 );
+		  transformInitializer->SetTransform(   outputTransform );
 		  transformInitializer->SetImage(  fixedImageReader->GetOutput() );
 		  transformInitializer->SetTransformDomainMeshSize( meshSize );
 		  transformInitializer->InitializeTransform();
 
-		  registration->SetInitialTransform( outputTransform3 );
+		  outfile3 << outputTransform->GetParameters() << std::endl;
+
+		  registration->SetInitialTransform( outputTransform );
 	  }
 
 	  //  A single level registration process is run using
@@ -528,7 +510,7 @@ int main( int argc, char *argv[] )
 	  smoothingSigmasPerLevel.SetSize( numberOfLevels3 );
 	  smoothingSigmasPerLevel[0] = 4;
 	  smoothingSigmasPerLevel[1] = 2;
-	  smoothingSigmasPerLevel[2] = 1;
+	  smoothingSigmasPerLevel[2] = 0;
 
 	  registration->SetNumberOfLevels( numberOfLevels3 );
 	  registration->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
@@ -547,7 +529,9 @@ int main( int argc, char *argv[] )
 
 	  // Software Guide : BeginCodeSnippet
 	  const unsigned int numParameters =
-			  initialTransform3->GetNumberOfParameters();
+			  initialTransform->GetNumberOfParameters();
+
+	  std::cout << "num of transform parameters:" << numParameters << std::endl;
 
 
 	  OptimizerType::BoundSelectionType boundSelect( numParameters );
@@ -565,14 +549,14 @@ int main( int argc, char *argv[] )
 	  optimizer->SetGradientConvergenceTolerance( 1.0e-35 );
 	  optimizer->SetNumberOfIterations( 30 );
 	  optimizer->SetMaximumNumberOfFunctionEvaluations( 200 );
-	  optimizer->SetMaximumNumberOfCorrections( 6 );
+	  optimizer->SetMaximumNumberOfCorrections( 5 );
 	  //optimizer->SetNumberOfThreads(1);
 	  //registration->SetNumberOfThreads(1);
 	  //metric->SetMaximumNumberOfThreads(1);
 	  if (imageIndex==1) {
-	  	  optimizer->SetInitialPosition(initialTransform3->GetParameters());
+	  	  optimizer->SetInitialPosition(initialTransform->GetParameters());
 	  } else {
-	   	  optimizer->SetInitialPosition(transformParameters);
+	   	  optimizer->SetInitialPosition(outputTransform->GetParameters());
 	  }
 
 	  CommandIterationUpdate::Pointer observer = CommandIterationUpdate::New();
@@ -613,212 +597,8 @@ int main( int argc, char *argv[] )
 		return EXIT_FAILURE;
 		}
 
-	  double numberOfValidPoints3 = metric->GetCurrentNumberOfValidPoints();
-	  double metricValue3 = optimizer->GetCurrentMetricValue();
-	  outfile << metricValue3 <<std::endl;
-
-	  if (imageIndex==1) {
-		  transformInitializer->SetTransform(   initialTransform2 );
-		  transformInitializer->SetImage(  fixedImageReader->GetOutput() );
-		  transformInitializer->SetTransformDomainMeshSize( meshSize );
-		  transformInitializer->InitializeTransform();
-
-		  registration->SetInitialTransform( initialTransform2 );
-		  //registration->InPlaceOn();
-	  } else {
-		  outputTransform3 = outputTransform->Clone();
-		  transformInitializer->SetTransform(   initialTransform2 );
-		  transformInitializer->SetImage(  fixedImageReader->GetOutput() );
-		  transformInitializer->SetTransformDomainMeshSize( meshSize );
-		  transformInitializer->InitializeTransform();
-
-		  registration->SetInitialTransform( outputTransform3 );
-	  }
-	  //  A single level registration process is run using
-	  //  the shrink factor 1 and smoothing sigma 0.
-	  //
-	  const unsigned int numberOfLevels2 = 2;
-
-	  shrinkFactorsPerLevel.SetSize( numberOfLevels2 );
-	  shrinkFactorsPerLevel[0] = 2;
-	  shrinkFactorsPerLevel[1] = 1;
-	  smoothingSigmasPerLevel.SetSize( numberOfLevels2 );
-	  smoothingSigmasPerLevel[0] = 2;
-	  smoothingSigmasPerLevel[1] = 1;
-
-	  registration->SetNumberOfLevels( numberOfLevels2 );
-	  registration->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
-	  registration->SetShrinkFactorsPerLevel( shrinkFactorsPerLevel );
-
-	  //  Software Guide : BeginLatex
-	  //
-	  //  Next we set the parameters of the LBFGSB Optimizer. Note that
-	  //  this optimizer does not support scales estimator and sets all
-	  //  the parameters scales to one.
-	  //  Also, we should set the boundary condition for each variable, where
-	  //  \code{boundSelect[i]} can be set as: \code{UNBOUNDED},
-	  //  \code{LOWERBOUNDED}, \code{BOTHBOUNDED}, \code{UPPERBOUNDED}.
-	  //
-	  //  Software Guide : EndLatex
-
-	  boundSelect.Fill( OptimizerType::UNBOUNDED );
-	  upperBound.Fill( 0.0 );
-	  lowerBound.Fill( 0.0 );
-
-	  optimizer->SetBoundSelection( boundSelect );
-	  optimizer->SetUpperBound( upperBound );
-	  optimizer->SetLowerBound( lowerBound );
-	  optimizer->SetCostFunctionConvergenceFactor( 1e+7 );
-	  optimizer->SetGradientConvergenceTolerance( 1.0e-35 );
-	  optimizer->SetNumberOfIterations( 30 );
-	  optimizer->SetMaximumNumberOfFunctionEvaluations( 200 );
-	  optimizer->SetMaximumNumberOfCorrections( 6 );
-	  //optimizer->SetNumberOfThreads(1);
-	  //registration->SetNumberOfThreads(1);
-	  //metric->SetMaximumNumberOfThreads(1);
-	  if (imageIndex==1) {
-	  	  optimizer->SetInitialPosition(initialTransform2->GetParameters());
-	  } else {
-	   	  optimizer->SetInitialPosition(transformParameters);
-	  }
-
-	  observer = CommandIterationUpdate::New();
-	  observer->SetOutputOptimizationLog(outputOptimizationLog);
-	  optimizer->AddObserver( itk::IterationEvent(), observer );
-
-	  command = CommandType::New();
-	  registration->AddObserver( itk::MultiResolutionIterationEvent(), command );
-
-	  std::cout << std::endl << "Starting Registration" << std::endl;
-
-	  try
-		{
-		memorymeter.Start( "Registration" );
-		chronometer.Start( "Registration" );
-
-		registration->Update();
-
-		chronometer.Stop( "Registration" );
-		memorymeter.Stop( "Registration" );
-
-		optimizer->RemoveAllObservers();
-		registration->RemoveAllObservers();
-
-		std::cout << "Optimizer stop condition = "
-				  << registration->GetOptimizer()->GetStopConditionDescription()
-				  << std::endl;
-		}
-	  catch( itk::ExceptionObject & err )
-		{
-		std::cerr << "ExceptionObject caught !" << std::endl;
-		std::cerr << err << std::endl;
-		return EXIT_FAILURE;
-		}
-
-	  double numberOfValidPoints2 = metric->GetCurrentNumberOfValidPoints();
-	  double metricValue2 = optimizer->GetCurrentMetricValue();
-	  outfile << metricValue2 <<std::endl;
-
-	  if (imageIndex==1) {
-		  transformInitializer->SetTransform(   initialTransform1 );
-		  transformInitializer->SetImage(  fixedImageReader->GetOutput() );
-		  transformInitializer->SetTransformDomainMeshSize( meshSize );
-		  transformInitializer->InitializeTransform();
-
-		  registration->SetInitialTransform( initialTransform1 );
-		  //registration->InPlaceOn();
-	  } else {
-		  outputTransform3 = outputTransform->Clone();
-		  transformInitializer->SetTransform(   initialTransform1 );
-		  transformInitializer->SetImage(  fixedImageReader->GetOutput() );
-		  transformInitializer->SetTransformDomainMeshSize( meshSize );
-		  transformInitializer->InitializeTransform();
-
-		  registration->SetInitialTransform( outputTransform3 );
-	  }
-
-	  //  A single level registration process is run using
-	  //  the shrink factor 1 and smoothing sigma 0.
-	  //
-	  const unsigned int numberOfLevels1 = 1;
-
-	  shrinkFactorsPerLevel.SetSize( numberOfLevels1 );
-	  shrinkFactorsPerLevel[0] = 1;
-	  smoothingSigmasPerLevel.SetSize( numberOfLevels1 );
-	  smoothingSigmasPerLevel[0] = 1;
-
-	  registration->SetNumberOfLevels( numberOfLevels1 );
-	  registration->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
-	  registration->SetShrinkFactorsPerLevel( shrinkFactorsPerLevel );
-
-	  //  Software Guide : BeginLatex
-	  //
-	  //  Next we set the parameters of the LBFGSB Optimizer. Note that
-	  //  this optimizer does not support scales estimator and sets all
-	  //  the parameters scales to one.
-	  //  Also, we should set the boundary condition for each variable, where
-	  //  \code{boundSelect[i]} can be set as: \code{UNBOUNDED},
-	  //  \code{LOWERBOUNDED}, \code{BOTHBOUNDED}, \code{UPPERBOUNDED}.
-	  //
-	  //  Software Guide : EndLatex
-
-	  boundSelect.Fill( OptimizerType::UNBOUNDED );
-	  upperBound.Fill( 0.0 );
-	  lowerBound.Fill( 0.0 );
-
-	  optimizer->SetBoundSelection( boundSelect );
-	  optimizer->SetUpperBound( upperBound );
-	  optimizer->SetLowerBound( lowerBound );
-	  optimizer->SetCostFunctionConvergenceFactor( 1e+7 );
-	  optimizer->SetGradientConvergenceTolerance( 1.0e-35 );
-	  optimizer->SetNumberOfIterations( 30 );
-	  optimizer->SetMaximumNumberOfFunctionEvaluations( 200 );
-	  optimizer->SetMaximumNumberOfCorrections( 6 );
-	  //optimizer->SetNumberOfThreads(1);
-	  //registration->SetNumberOfThreads(1);
-	  //metric->SetMaximumNumberOfThreads(1);
-	  if (imageIndex==1) {
-	  	  optimizer->SetInitialPosition(initialTransform1->GetParameters());
-	  } else {
-	   	  optimizer->SetInitialPosition(transformParameters);
-	  }
-
-	  observer = CommandIterationUpdate::New();
-	  observer->SetOutputOptimizationLog(outputOptimizationLog);
-	  optimizer->AddObserver( itk::IterationEvent(), observer );
-
-	  command = CommandType::New();
-	  registration->AddObserver( itk::MultiResolutionIterationEvent(), command );
-
-	  std::cout << std::endl << "Starting Registration" << std::endl;
-
-	  try
-		{
-		memorymeter.Start( "Registration" );
-		chronometer.Start( "Registration" );
-
-		registration->Update();
-
-		chronometer.Stop( "Registration" );
-		memorymeter.Stop( "Registration" );
-
-		optimizer->RemoveAllObservers();
-		registration->RemoveAllObservers();
-
-		std::cout << "Optimizer stop condition = "
-				  << registration->GetOptimizer()->GetStopConditionDescription()
-				  << std::endl;
-		}
-	  catch( itk::ExceptionObject & err )
-		{
-		std::cerr << "ExceptionObject caught !" << std::endl;
-		std::cerr << err << std::endl;
-		return EXIT_FAILURE;
-		}
-
-	  double numberOfValidPoints1 = metric->GetCurrentNumberOfValidPoints();
-	  double metricValue1 = optimizer->GetCurrentMetricValue();
-	  outfile << metricValue1 <<std::endl;
+	  double metricValue = optimizer->GetCurrentMetricValue();
+	  outfile << metricValue <<std::endl;
 
 	  // Report the time and memory taken by the registration
 	  //chronometer.Report( std::cout );
@@ -840,36 +620,11 @@ int main( int argc, char *argv[] )
 	  //  Software Guide : EndLatex
 
 	  // Software Guide : BeginCodeSnippet
-	  if (imageIndex==1) {
-		  if (metricValue1<=metricValue2&&metricValue1<=metricValue3) {
-			  outputTransform = initialTransform1->Clone();
-			  numberOfValidPoints = numberOfValidPoints1;
-		  }
-		  if (metricValue2<=metricValue1&&metricValue2<=metricValue3) {
-			  outputTransform = initialTransform2->Clone();
-			  numberOfValidPoints = numberOfValidPoints2;
-		  }
-		  if (metricValue3<=metricValue1&&metricValue3<=metricValue2) {
-			  outputTransform = initialTransform3->Clone();
-			  numberOfValidPoints = numberOfValidPoints3;
-		  }
-	  } else {
-		  if (metricValue1<=metricValue2&&metricValue1<=metricValue3) {
-			  outputTransform = outputTransform1->Clone();
-			  numberOfValidPoints = numberOfValidPoints1;
-		  }
-		  if (metricValue2<=metricValue1&&metricValue2<=metricValue3) {
-			  outputTransform = outputTransform2->Clone();
-			  numberOfValidPoints = numberOfValidPoints2;
-		  }
-		  if (metricValue3<=metricValue1&&metricValue3<=metricValue2) {
-			  outputTransform = outputTransform3->Clone();
-			  numberOfValidPoints = numberOfValidPoints3;
-		  }
-	  }
 
 	  transformParameters = outputTransform->GetParameters();
 	  outputTransform->GetInverse(inverseOutputTransform);
+	  //itk::Transform<double, 3u, 3u>::Pointer inverseOutputTransform = itk::Transform<double, 3u, 3u>::New();
+	  //inverseOutputTransform = outputTransform->GetInverseTransform();
 
       outfile3 << movedImageName << std::endl;
       outfile3 << transformParameters << std::endl;
@@ -879,8 +634,6 @@ int main( int argc, char *argv[] )
 	  {
 		  t[i] = transformParameters[i];
 	  }
-	  metric->SetPreviousTransformParameters(t, 6);
-	  metric->SetPreviousNumberOfValidPoints(numberOfValidPoints);
 
 	  // Software Guide : EndCodeSnippet
 

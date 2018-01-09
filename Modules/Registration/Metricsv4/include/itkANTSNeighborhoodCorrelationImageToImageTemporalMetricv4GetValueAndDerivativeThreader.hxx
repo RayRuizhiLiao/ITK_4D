@@ -99,7 +99,7 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
     ++scanIt;
     }
 
-  double prevCount = this->m_ANTSAssociate->GetPreviousNumberOfValidPoints();
+  //double prevCount = this->m_ANTSAssociate->GetPreviousNumberOfValidPoints();
   //if (prevCount>-1)
   //{
   //	  if (std::abs(prevCount-count)/prevCount>0.2){
@@ -515,7 +515,6 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
 
   double w1 = this->m_ANTSAssociate->GetTemporalSmoothness1();
   double w2 = this->m_ANTSAssociate->GetTemporalSmoothness2();
-  double num = this->m_ANTSAssociate->GetNumOfTransformParameters();
   double* prevT = this->m_ANTSAssociate->GetPreviousTransformParameters();
   ParametersType currentT = this->m_Associate->GetMovingTransform()->GetParameters();
 
