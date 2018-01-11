@@ -84,6 +84,11 @@
 
 #include "itkBSplineTransformInitializer.h"
 #include "itkTransformToDisplacementFieldFilter.h"
+#include "itkInverseDisplacementFieldImageFilter.h"
+#include "itkWarpImageFilter.h"
+#include "itkIterativeInverseDisplacementFieldImageFilter.h"
+#include "itkInverseDeformationFieldImageFilter.h"
+
 
 #include "itkANTSNeighborhoodCorrelationImageToImageTemporalMetricv4.h"
 
@@ -622,9 +627,6 @@ int main( int argc, char *argv[] )
 	  // Software Guide : BeginCodeSnippet
 
 	  transformParameters = outputTransform->GetParameters();
-	  outputTransform->GetInverse(inverseOutputTransform);
-	  //itk::Transform<double, 3u, 3u>::Pointer inverseOutputTransform = itk::Transform<double, 3u, 3u>::New();
-	  //inverseOutputTransform = outputTransform->GetInverseTransform();
 
       outfile3 << movedImageName << std::endl;
       outfile3 << transformParameters << std::endl;
@@ -698,6 +700,9 @@ int main( int argc, char *argv[] )
 	  /** Create an setup displacement field generator. */
 	  DisplacementFieldGeneratorType::Pointer dispfieldGenerator =
 													 DisplacementFieldGeneratorType::New();
+
+	  DisplacementFieldImageType::Pointer dispField = DisplacementFieldImageType::New();
+
 	  dispfieldGenerator->UseReferenceImageOn();
 	  dispfieldGenerator->SetReferenceImage( fixedImage );
 	  dispfieldGenerator->SetTransform( outputTransform );
@@ -715,7 +720,9 @@ int main( int argc, char *argv[] )
 	  typedef itk::ImageFileWriter< DisplacementFieldImageType >  FieldWriterType;
 	  FieldWriterType::Pointer fieldWriter = FieldWriterType::New();
 
-	  fieldWriter->SetInput( dispfieldGenerator->GetOutput() );
+	  dispField = dispfieldGenerator->GetOutput();
+
+	  fieldWriter->SetInput( dispField );
 	  fieldWriter->SetFileName( warpFieldName );
 	  try
 	    {
@@ -730,26 +737,36 @@ int main( int argc, char *argv[] )
 
 	  // Finally we use the last inverse transform in order to resample the image.
 	  //
-	  ResampleFilterType::Pointer resample2 = ResampleFilterType::New();
 
-	  resample2->SetTransform( inverseOutputTransform );
-	  resample2->SetInput( fixedImageReader->GetOutput() );
+	  typedef itk::InverseDeformationFieldImageFilter<
+							DisplacementFieldImageType,
+							DisplacementFieldImageType >             InverseDisplacementFieldFilterType;
 
-	  resample2->SetSize(    movingImage->GetLargestPossibleRegion().GetSize() );
-	  resample2->SetOutputOrigin(  movingImage->GetOrigin() );
-	  resample2->SetOutputSpacing( movingImage->GetSpacing() );
-	  resample2->SetOutputDirection( movingImage->GetDirection() );
-	  resample2->SetDefaultPixelValue( 0 );
+	  InverseDisplacementFieldFilterType::Pointer inverseDispFieldGenerator = InverseDisplacementFieldFilterType::New();
+
+	  inverseDispFieldGenerator->SetInput(dispField);
+	  //inverseDispFieldGenerator->SetSize(fixedImage->GetLargestPossibleRegion().GetSize());
+	  //inverseDispFieldGenerator->SetOutputSpacing(fixedImage->GetSpacing());
+	  //inverseDispFieldGenerator->SetOutputOrigin(dispfieldGenerator->GetOutputOrigin());
+	  inverseDispFieldGenerator->SetSubsamplingFactor(8);
+	  inverseDispFieldGenerator->Update();
+
+	  typedef itk::WarpImageFilter<
+			  	  	  FixedImageType,
+					  MovingImageType,
+					  DisplacementFieldImageType >             WarpImageFilterType;
+
+	  WarpImageFilterType::Pointer warpImageFilter = WarpImageFilterType::New();
+
+	  warpImageFilter->SetInput(fixedImageReader->GetOutput());
+	  warpImageFilter->SetOutputParametersFromImage(fixedImageReader->GetOutput());
+	  warpImageFilter->SetDisplacementField(inverseDispFieldGenerator->GetOutput());
+	  warpImageFilter->Update();
 
 	  WriterType::Pointer      writer2 =  WriterType::New();
-	  CastFilterType::Pointer  caster2 =  CastFilterType::New();
-
 
 	  writer2->SetFileName( inverseMovedImageName );
-
-
-	  caster2->SetInput( resample2->GetOutput() );
-	  writer2->SetInput( caster2->GetOutput()   );
+	  writer2->SetInput( warpImageFilter->GetOutput() );
 
 	  try
 		{
@@ -765,27 +782,10 @@ int main( int argc, char *argv[] )
 	  // Generate the explicit inverse deformation field resulting from
 	  // the registration.
 
-	  /** Create an setup displacement field generator. */
-	  DisplacementFieldGeneratorType::Pointer dispfieldGenerator2 =
-													 DisplacementFieldGeneratorType::New();
-	  dispfieldGenerator2->UseReferenceImageOn();
-	  dispfieldGenerator2->SetReferenceImage( movingImage );
-	  dispfieldGenerator2->SetTransform( inverseOutputTransform );
-	  try
-		{
-		  dispfieldGenerator2->Update();
-		}
-	  catch ( itk::ExceptionObject & err )
-		{
-		std::cerr << "Exception detected while generating deformation field";
-		std::cerr << " : "  << err << std::endl;
-		return EXIT_FAILURE;
-		}
-
 	  typedef itk::ImageFileWriter< DisplacementFieldImageType >  FieldWriterType;
 	  FieldWriterType::Pointer fieldWriter2 = FieldWriterType::New();
 
-	  fieldWriter2->SetInput( dispfieldGenerator2->GetOutput() );
+	  fieldWriter2->SetInput( inverseDispFieldGenerator->GetOutput() );
 	  fieldWriter2->SetFileName( inverseWarpFieldName );
 	  try
 	    {
