@@ -87,8 +87,8 @@
 #include "itkInverseDisplacementFieldImageFilter.h"
 #include "itkWarpImageFilter.h"
 #include "itkIterativeInverseDisplacementFieldImageFilter.h"
-#include "itkInverseDeformationFieldImageFilter.h"
 
+#include "itkImageRegionIteratorWithIndex.h"
 
 #include "itkANTSNeighborhoodCorrelationImageToImageTemporalMetricv4.h"
 
@@ -416,6 +416,8 @@ int main( int argc, char *argv[] )
 
 	  std::string movedImageName = outputFolder + movingImageName.substr(movingSlashIndex+1, movingImageName.length()-movingSlashIndex-8) + "_to_" + fixedImageName.substr(fixedSlashIndex+1, fixedImageName.length()-fixedSlashIndex-8) + ".nii.gz";
 	  std::cout << "Moved Image Name: " << movedImageName << std::endl;
+	  std::string maskedMovedImageName = outputFolder + movingImageName.substr(movingSlashIndex+1, movingImageName.length()-movingSlashIndex-8) + "_to_" + fixedImageName.substr(fixedSlashIndex+1, fixedImageName.length()-fixedSlashIndex-8) + "_masked.nii.gz";
+	  std::cout << "Moved Image Name: " << maskedMovedImageName << std::endl;
 	  std::string warpFieldName = outputFolder + movingImageName.substr(movingSlashIndex+1, movingImageName.length()-movingSlashIndex-8) + "_to_" + fixedImageName.substr(fixedSlashIndex+1, fixedImageName.length()-fixedSlashIndex-8) + "_warp.nii.gz";
 	  std::cout << "Warp Image Name: " << warpFieldName << std::endl;
 
@@ -477,9 +479,9 @@ int main( int argc, char *argv[] )
 	  //unsigned int numberOfGridNodesInOneDimension = 8;
 
 	  TransformType::MeshSizeType             meshSize;
-	  meshSize.SetElement(0, 7);
-	  meshSize.SetElement(1, 7);
-	  meshSize.SetElement(2, 5);
+	  meshSize.SetElement(0, 12);
+	  meshSize.SetElement(1, 12);
+	  meshSize.SetElement(2, 9);
 	  //meshSize.Fill( numberOfGridNodesInOneDimension - SplineOrder );
 
 	  if (imageIndex==1) {
@@ -499,6 +501,7 @@ int main( int argc, char *argv[] )
 		  outfile3 << outputTransform->GetParameters() << std::endl;
 
 		  registration->SetInitialTransform( outputTransform );
+		  registration->InPlaceOn();
 	  }
 
 	  //  A single level registration process is run using
@@ -550,10 +553,12 @@ int main( int argc, char *argv[] )
 	  optimizer->SetBoundSelection( boundSelect );
 	  optimizer->SetUpperBound( upperBound );
 	  optimizer->SetLowerBound( lowerBound );
-	  optimizer->SetCostFunctionConvergenceFactor( 1e+7 );
+	  optimizer->SetCostFunctionConvergenceFactor( 1e+12 );
 	  optimizer->SetGradientConvergenceTolerance( 1.0e-35 );
+	  //optimizer->SetNumberOfIterations( 30 );
+	  //optimizer->SetMaximumNumberOfFunctionEvaluations( 200 );
 	  optimizer->SetNumberOfIterations( 30 );
-	  optimizer->SetMaximumNumberOfFunctionEvaluations( 200 );
+	  optimizer->SetMaximumNumberOfFunctionEvaluations( 100 );
 	  optimizer->SetMaximumNumberOfCorrections( 5 );
 	  //optimizer->SetNumberOfThreads(1);
 	  //registration->SetNumberOfThreads(1);
@@ -626,6 +631,9 @@ int main( int argc, char *argv[] )
 
 	  // Software Guide : BeginCodeSnippet
 
+	  if (imageIndex==1) {
+		  outputTransform = initialTransform->Clone();
+	  }
 	  transformParameters = outputTransform->GetParameters();
 
       outfile3 << movedImageName << std::endl;
@@ -701,7 +709,7 @@ int main( int argc, char *argv[] )
 	  DisplacementFieldGeneratorType::Pointer dispfieldGenerator =
 													 DisplacementFieldGeneratorType::New();
 
-	  DisplacementFieldImageType::Pointer dispField = DisplacementFieldImageType::New();
+	  DisplacementFieldImageType::Pointer resampledInverseDispField = DisplacementFieldImageType::New();
 
 	  dispfieldGenerator->UseReferenceImageOn();
 	  dispfieldGenerator->SetReferenceImage( fixedImage );
@@ -720,7 +728,22 @@ int main( int argc, char *argv[] )
 	  typedef itk::ImageFileWriter< DisplacementFieldImageType >  FieldWriterType;
 	  FieldWriterType::Pointer fieldWriter = FieldWriterType::New();
 
-	  dispField = dispfieldGenerator->GetOutput();
+	  DisplacementFieldImageType::Pointer dispField = dispfieldGenerator->GetOutput();
+
+	  DisplacementFieldImageType::RegionType dispFieldRegion = dispField->GetLargestPossibleRegion();
+	  itk::ImageRegionIteratorWithIndex< DisplacementFieldImageType > it( dispField, dispFieldRegion );
+
+	  VectorPixelType zeroVector;
+	  for (int i=0; i<(int)ImageDimension; i++) {
+		  zeroVector[i] = 0.0;
+	  }
+	  it.GoToBegin();
+	  while( !it.IsAtEnd() ) {
+		if(maskImage->GetPixel(it.GetIndex()) == 0) {
+			it.Set(zeroVector);
+		}
+	    ++it;
+	  }
 
 	  fieldWriter->SetInput( dispField );
 	  fieldWriter->SetFileName( warpFieldName );
@@ -735,42 +758,109 @@ int main( int argc, char *argv[] )
 		return EXIT_FAILURE;
 	    }
 
+	  typedef itk::WarpImageFilter<
+			  	  	  FixedImageType,
+					  MovingImageType,
+					  DisplacementFieldImageType >             WarpImageFilterType;
+
+	  WarpImageFilterType::Pointer warpMovingImageFilter = WarpImageFilterType::New();
+
+	  warpMovingImageFilter->SetInput(movingImageReader->GetOutput());
+	  warpMovingImageFilter->SetOutputParametersFromImage(movingImageReader->GetOutput());
+	  warpMovingImageFilter->SetDisplacementField(dispField);
+	  warpMovingImageFilter->Update();
+
+	  WriterType::Pointer      writer2 =  WriterType::New();
+
+	  writer2->SetFileName( maskedMovedImageName );
+	  writer2->SetInput( warpMovingImageFilter->GetOutput() );
+
+	  try
+		{
+		writer2->Update();
+		}
+	  catch( itk::ExceptionObject & err )
+		{
+		std::cerr << "ExceptionObject caught !" << std::endl;
+		std::cerr << err << std::endl;
+		return EXIT_FAILURE;
+		}
+
 	  // Finally we use the last inverse transform in order to resample the image.
 	  //
 
-	  typedef itk::InverseDeformationFieldImageFilter<
+	  DisplacementFieldImageType::Pointer inverseDispField = dispField;
+
+
+	  DisplacementFieldImageType::RegionType inverseDispFieldRegion = inverseDispField->GetLargestPossibleRegion();
+	  itk::ImageRegionIteratorWithIndex< DisplacementFieldImageType > itInverseDisp( inverseDispField, inverseDispFieldRegion );
+
+	  VectorPixelType vector;
+	  itInverseDisp.GoToBegin();
+	  while( !itInverseDisp.IsAtEnd() )
+	    {
+		vector = itInverseDisp.Get();
+		for (int i=0; i<(int)ImageDimension; i++) {
+			vector[i] = vector[i] * -1.0;
+		}
+		itInverseDisp.Set( vector );
+	    ++itInverseDisp;
+	    }
+
+
+	  typedef itk::ResampleImageFilter<
+			  	  	  	  DisplacementFieldImageType,
+						  DisplacementFieldImageType >    ResampleDispFieldFilterType;
+
+	  ResampleDispFieldFilterType::Pointer dispFieldResample = ResampleDispFieldFilterType::New();
+	  dispFieldResample->SetTransform( outputTransform );
+	  dispFieldResample->SetInput( inverseDispField );
+	  dispFieldResample->SetSize(    dispField->GetLargestPossibleRegion().GetSize() );
+	  dispFieldResample->SetOutputOrigin(  dispField->GetOrigin() );
+	  dispFieldResample->SetOutputSpacing( dispField->GetSpacing() );
+	  dispFieldResample->SetOutputDirection( dispField->GetDirection() );
+	  for (int i=0; i<(int)ImageDimension; i++) {
+		  vector[i] = 0.0;
+	  }
+	  dispFieldResample->SetDefaultPixelValue( vector );
+	  typedef itk::CastImageFilter<
+			  	  	  	  DisplacementFieldImageType,
+					  	  DisplacementFieldImageType > CastDispFieldFilterType;
+	  CastDispFieldFilterType::Pointer dispFieldCaster = CastDispFieldFilterType::New();
+	  dispFieldCaster->SetInput(dispFieldResample->GetOutput());
+	  dispFieldCaster->Update();
+	  resampledInverseDispField = dispFieldCaster->GetOutput();
+
+	  /*
+	  typedef itk::InverseDisplacementFieldImageFilter<
 							DisplacementFieldImageType,
 							DisplacementFieldImageType >             InverseDisplacementFieldFilterType;
 
 	  InverseDisplacementFieldFilterType::Pointer inverseDispFieldGenerator = InverseDisplacementFieldFilterType::New();
 
 	  inverseDispFieldGenerator->SetInput(dispField);
-	  //inverseDispFieldGenerator->SetSize(fixedImage->GetLargestPossibleRegion().GetSize());
-	  //inverseDispFieldGenerator->SetOutputSpacing(fixedImage->GetSpacing());
-	  //inverseDispFieldGenerator->SetOutputOrigin(dispfieldGenerator->GetOutputOrigin());
-	  inverseDispFieldGenerator->SetSubsamplingFactor(8);
+	  inverseDispFieldGenerator->SetSize(fixedImage->GetLargestPossibleRegion().GetSize());
+	  inverseDispFieldGenerator->SetOutputSpacing(fixedImage->GetSpacing());
+	  inverseDispFieldGenerator->SetOutputOrigin(dispfieldGenerator->GetOutputOrigin());
+	  inverseDispFieldGenerator->SetSubsamplingFactor(16);
 	  inverseDispFieldGenerator->Update();
-
-	  typedef itk::WarpImageFilter<
-			  	  	  FixedImageType,
-					  MovingImageType,
-					  DisplacementFieldImageType >             WarpImageFilterType;
+	*/
 
 	  WarpImageFilterType::Pointer warpImageFilter = WarpImageFilterType::New();
 
 	  warpImageFilter->SetInput(fixedImageReader->GetOutput());
 	  warpImageFilter->SetOutputParametersFromImage(fixedImageReader->GetOutput());
-	  warpImageFilter->SetDisplacementField(inverseDispFieldGenerator->GetOutput());
+	  warpImageFilter->SetDisplacementField(resampledInverseDispField);
 	  warpImageFilter->Update();
 
-	  WriterType::Pointer      writer2 =  WriterType::New();
+	  WriterType::Pointer      writer3 =  WriterType::New();
 
-	  writer2->SetFileName( inverseMovedImageName );
-	  writer2->SetInput( warpImageFilter->GetOutput() );
+	  writer3->SetFileName( inverseMovedImageName );
+	  writer3->SetInput( warpImageFilter->GetOutput() );
 
 	  try
 		{
-		writer2->Update();
+		writer3->Update();
 		}
 	  catch( itk::ExceptionObject & err )
 		{
@@ -785,7 +875,7 @@ int main( int argc, char *argv[] )
 	  typedef itk::ImageFileWriter< DisplacementFieldImageType >  FieldWriterType;
 	  FieldWriterType::Pointer fieldWriter2 = FieldWriterType::New();
 
-	  fieldWriter2->SetInput( inverseDispFieldGenerator->GetOutput() );
+	  fieldWriter2->SetInput( resampledInverseDispField );
 	  fieldWriter2->SetFileName( inverseWarpFieldName );
 	  try
 	    {
