@@ -90,8 +90,8 @@
 
 #include "itkImageRegionIteratorWithIndex.h"
 
-#include "itkANTSNeighborhoodCorrelationImageToImageTemporalMetricv4.h"
-
+//#include "itkANTSNeighborhoodCorrelationImageToImageTemporalMetricv4.h"
+#include "itkANTSNeighborhoodCorrelationImageToImageMetricv4.h"
 
 //  The following section of code implements a Command observer
 //  used to monitor the evolution of the registration process.
@@ -346,7 +346,7 @@ int main( int argc, char *argv[] )
 
   typedef itk::LBFGSBOptimizerv4       OptimizerType;
 
-  typedef itk::ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<
+  typedef itk::ANTSNeighborhoodCorrelationImageToImageMetricv4<
                                           FixedImageType,
                                           MovingImageType >    MetricType;
 
@@ -439,9 +439,9 @@ int main( int argc, char *argv[] )
       registration->SetMetric(        metric        );
       registration->SetOptimizer(     optimizer     );
 
-      metric->SetTemporalSmoothness1(w1);
-      metric->SetTemporalSmoothness2(w2);
-      metric->SetPreviousTransformParameters(t, 6);
+      //metric->SetTemporalSmoothness1(w1);
+      //metric->SetTemporalSmoothness2(w2);
+      //metric->SetPreviousTransformParameters(t, 6);
 
 	  FixedImageType::ConstPointer fixedImage = fixedImageReader->GetOutput();
 	  MovingImageType::ConstPointer movingImage = movingImageReader->GetOutput();
@@ -469,7 +469,7 @@ int main( int argc, char *argv[] )
 
 
 	  outfile3 << outputTransform->GetParameters() << std::endl;
-	  outfile4 << metric->GetPreviousNumberOfValidPoints() << std::endl;
+	  //outfile4 << metric->GetPreviousNumberOfValidPoints() << std::endl;
 
 	  // Initialize the transform
 	  typedef itk::BSplineTransformInitializer< TransformType,
@@ -493,10 +493,10 @@ int main( int argc, char *argv[] )
 		  registration->SetInitialTransform( initialTransform );
 		  registration->InPlaceOn();
 	  } else {
-		  transformInitializer->SetTransform(   outputTransform );
-		  transformInitializer->SetImage(  fixedImageReader->GetOutput() );
-		  transformInitializer->SetTransformDomainMeshSize( meshSize );
-		  transformInitializer->InitializeTransform();
+		  //transformInitializer->SetTransform(   outputTransform );
+		  //transformInitializer->SetImage(  fixedImageReader->GetOutput() );
+		  //transformInitializer->SetTransformDomainMeshSize( meshSize );
+		  //transformInitializer->InitializeTransform();
 
 		  outfile3 << outputTransform->GetParameters() << std::endl;
 
