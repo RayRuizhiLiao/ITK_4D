@@ -107,6 +107,8 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
   //	  }
   //}
 
+  std::cout << count << std::endl;
+
   this->m_ANTSAssociate->SetCurrentNumberOfValidPoints(count);
 
   /* Store metric value result for this thread. */
@@ -252,6 +254,7 @@ template < typename TDomainPartitioner, typename TImageToImageMetric, typename T
    {
    continue;
    }
+
    typename VirtualImageType::IndexType index = scanIt.GetIndex(indct);
 
    VirtualPointType virtualPoint;
@@ -319,9 +322,6 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
   scanParameters.movingImage  = this->m_ANTSAssociate->m_MovingImage;
   scanParameters.virtualImage = this->m_ANTSAssociate->GetVirtualImage();
   scanParameters.radius       = this->m_ANTSAssociate->GetRadius();
-
-  //std::cout << scanRegion << std::endl;
-
 
   OffsetValueType numberOfFillZero = this->m_ANTSAssociate->GetVirtualRegion().GetIndex(0)
       - (scanRegion.GetIndex(0) - scanParameters.radius[0]);

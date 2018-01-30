@@ -493,12 +493,14 @@ int main( int argc, char *argv[] )
 		  registration->SetInitialTransform( initialTransform );
 		  registration->InPlaceOn();
 	  } else {
-		  //transformInitializer->SetTransform(   outputTransform );
-		  //transformInitializer->SetImage(  fixedImageReader->GetOutput() );
-		  //transformInitializer->SetTransformDomainMeshSize( meshSize );
-		  //transformInitializer->InitializeTransform();
+		  transformInitializer->SetTransform(   outputTransform );
+		  transformInitializer->SetImage(  fixedImageReader->GetOutput() );
+		  transformInitializer->SetTransformDomainMeshSize( meshSize );
+		  transformInitializer->InitializeTransform();
 
 		  outfile3 << outputTransform->GetParameters() << std::endl;
+
+		  //std::cout << "output transform:" << outputTransform->GetParameters() << std::endl;
 
 		  registration->SetInitialTransform( outputTransform );
 		  registration->InPlaceOn();
@@ -635,6 +637,8 @@ int main( int argc, char *argv[] )
 		  outputTransform = initialTransform->Clone();
 	  }
 	  transformParameters = outputTransform->GetParameters();
+
+	  //std::cout << "estimated transform" << outputTransform->GetParameters() << std::endl;
 
       outfile3 << movedImageName << std::endl;
       outfile3 << transformParameters << std::endl;
