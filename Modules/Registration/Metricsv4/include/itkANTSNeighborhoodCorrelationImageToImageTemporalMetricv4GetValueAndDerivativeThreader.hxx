@@ -107,8 +107,6 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
   //	  }
   //}
 
-  std::cout << count << std::endl;
-
   this->m_ANTSAssociate->SetCurrentNumberOfValidPoints(count);
 
   /* Store metric value result for this thread. */
@@ -568,9 +566,13 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
         {
         deriv[par] += derivWRTImage[dim] * jacobian(dim, par);
         if (par<3) {
+        	if (w1!=0) {
         	deriv[par] += w1*(currentT[par]-prevT[par]);
+        	}
         } else {
+        	if (w2!=0) {
         	deriv[par] += w2*(currentT[par]-prevT[par]);
+        	}
         }
         }
       }

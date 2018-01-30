@@ -38,6 +38,9 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImag
   // ImageToImageMetricv4 to use.
   this->m_DenseGetValueAndDerivativeThreader  = ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4DenseGetValueAndDerivativeThreaderType::New();
   this->m_SparseGetValueAndDerivativeThreader = ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4SparseGetValueAndDerivativeThreaderType::New();
+
+  this->TemporalSmoothnessWeight1 = 0;
+  this->TemporalSmoothnessWeight2 = 0;
 }
 
 template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
