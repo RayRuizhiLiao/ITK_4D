@@ -25,6 +25,9 @@
 
 #include <deque>
 
+const std::string rigid = "rigid";
+const std::string bspline = "bspline";
+
 namespace itk
 {
 

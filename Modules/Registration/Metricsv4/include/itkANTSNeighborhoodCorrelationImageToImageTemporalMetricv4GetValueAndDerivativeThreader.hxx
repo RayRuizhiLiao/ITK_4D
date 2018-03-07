@@ -511,6 +511,8 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
 
   LocalRealType sFixedFixed_sMovingMoving = sFixedFixed * sMovingMoving;
 
+  std::string transformType = this->m_ANTSAssociate->GetTransformModel();
+  int numParameters = this->m_ANTSAssociate->GetNumOfTransformParameters();
   double w1 = this->m_ANTSAssociate->GetTemporalSmoothness1();
   double w2 = this->m_ANTSAssociate->GetTemporalSmoothness2();
   double* prevT = this->m_ANTSAssociate->GetPreviousTransformParameters();
@@ -527,8 +529,30 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
 		  localCC = NumericTraits<MeasureType>::ZeroValue();
 	  }
   }
-  localCC -= 0.5*w1*((currentT[0]-prevT[0])*(currentT[0]-prevT[0])+(currentT[1]-prevT[1])*(currentT[1]-prevT[1])+(currentT[2]-prevT[2])*(currentT[2]-prevT[2]));
-  localCC -= 0.5*w2*((currentT[3]-prevT[3])*(currentT[3]-prevT[3])+(currentT[4]-prevT[4])*(currentT[4]-prevT[4])+(currentT[5]-prevT[5])*(currentT[5]-prevT[5]));
+
+
+  if (transformType == rigid) {
+    for (int i=0; i<=2; i++) {
+      if (w1!=0) {
+    	    localCC -= 0.5*w1*(currentT[i]-prevT[i])*(currentT[i]-prevT[i]);
+    	    std::cout << currentT[0] << " " << currentT[1] << " " << currentT[2] << " " << currentT[3] << " " << currentT[4] << " " << currentT[5] << std::endl;
+    	    std::cout << prevT[0] << " " << prevT[1] << " " << prevT[2] << " " << prevT[3] << " " << prevT[4] << " " << prevT[5] << std::endl;
+      }
+    }
+    for (int i=3; i<=5; i++) {
+    	  if (w2!=0) {
+    	    localCC -= 0.5*w2*(currentT[i]-prevT[i])*(currentT[i]-prevT[i]);
+    	  }
+    }
+  }
+
+  if (transformType == bspline) {
+    for (int i=0; i<numParameters; i++) {
+      if (w1!=0) {
+    	    localCC -= 0.5*w1*(currentT[i]-prevT[i])*(currentT[i]-prevT[i]);
+      }
+    }
+  }
 
   if( this->m_ANTSAssociate->GetComputeDerivative() )
     {
@@ -561,24 +585,37 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
 
     for (NumberOfParametersType par = 0; par < numberOfLocalParameters; par++)
       {
-      deriv[par] = NumericTraits<DerivativeValueType>::ZeroValue();
+
+    	  deriv[par] = NumericTraits<DerivativeValueType>::ZeroValue();
       for (ImageDimensionType dim = 0; dim < TImageToImageMetric::MovingImageDimension; dim++)
         {
         deriv[par] += derivWRTImage[dim] * jacobian(dim, par);
-        if (par<3) {
-        	if (w1!=0) {
-        	deriv[par] += w1*(currentT[par]-prevT[par]);
-        	}
-        } else {
-        	if (w2!=0) {
-        	deriv[par] += w2*(currentT[par]-prevT[par]);
-        	}
         }
+
+      if (transformType == rigid) {
+          if (par<3) {
+        	    if (w1!=0) {
+        	    	  deriv[par] -= w1*(currentT[par]-prevT[par]);
+        	    	  std::cout << "here " << currentT[0] << " " << currentT[1] << " " << currentT[2] << " " << currentT[3] << " " << currentT[4] << " " << currentT[5] << std::endl;
+        	    	  std::cout << prevT[0] << " " << prevT[1] << " " << prevT[2] << " " << prevT[3] << " " << prevT[4] << " " << prevT[5] << std::endl;
+        	    }
+          }
+          else {
+        	    if (w2!=0) {
+      	    	  deriv[par] -= w2*(currentT[par]-prevT[par]);
+      	    }
+          }
         }
+
+      if (transformType == bspline) {
+        	  if (w1!=0) {
+        	    	deriv[par] -= w1*(currentT[par]-prevT[par]);
+        	  }
+        }
+
+
       }
     }
-
-  	//std::cout << this->m_Associate->GetMovingTransform()->GetParameters() << std::endl;
 }
 
 /*

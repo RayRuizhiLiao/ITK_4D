@@ -41,6 +41,7 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImag
 
   this->TemporalSmoothnessWeight1 = 0;
   this->TemporalSmoothnessWeight2 = 0;
+  this->TransformModel = "none";
 }
 
 template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
@@ -157,6 +158,22 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImag
 ::GetCurrentNumberOfValidPoints()
 {
   return this->CurrentNumberOfValidPoints;
+}
+
+template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
+void
+ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
+::SetTransformModel(std::string t)
+{
+  this->TransformModel = t;
+}
+
+template<typename TFixedImage, typename TMovingImage, typename TVirtualImage, typename TInternalComputationValueType, typename TMetricTraits>
+std::string
+ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4<TFixedImage, TMovingImage, TVirtualImage, TInternalComputationValueType, TMetricTraits>
+::GetTransformModel()
+{
+  return this->TransformModel;
 }
 
 } // end namespace itk

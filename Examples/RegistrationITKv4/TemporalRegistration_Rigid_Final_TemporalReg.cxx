@@ -240,9 +240,7 @@ int main( int argc, char *argv[] )
   std::sscanf(argv[5], "%lf", &w1);
   double w2;
   std::sscanf(argv[6], "%lf", &w2);
-
-  metric->SetTemporalSmoothness1(w1);
-  metric->SetTemporalSmoothness2(w2);
+  double zero=0;
 
   double* t = new double[6];
   for (int i=0; i<6; i++)
@@ -250,6 +248,8 @@ int main( int argc, char *argv[] )
 	  t[i] = 0;
   }
   metric->SetPreviousTransformParameters(t, 6);
+  std::string transformModel = "rigid";
+  metric->SetTransformModel(transformModel);
 
   TransformType::Pointer  outputTransform1 = TransformType::New();
   TransformType::Pointer  outputTransform2 = TransformType::New();
@@ -322,6 +322,9 @@ int main( int argc, char *argv[] )
 	  // Three-level registrtaion
 	  //
 	  if (imageIndex==1) {
+		  metric->SetTemporalSmoothness1(zero);
+		  metric->SetTemporalSmoothness2(zero);
+
 		  initializer->SetTransform(   initialTransform3 );
 	      initializer->SetFixedImage(  fixedImage );
 	      initializer->SetMovingImage( movingImage );
@@ -343,11 +346,10 @@ int main( int argc, char *argv[] )
 		  registration->SetInitialTransform( initialTransform3 );
 		  registration->InPlaceOn();
 	  } else {
+		  metric->SetTemporalSmoothness1(w1);
+		  metric->SetTemporalSmoothness2(w2);
+
 		  outputTransform3 = outputTransform->Clone();
-		  initializer->SetTransform(   outputTransform3 );
-	      initializer->SetFixedImage(  fixedImage );
-	      initializer->SetMovingImage( movingImage );
-		  initializer->InitializeTransform();
 
 		  registration->SetInitialTransform( outputTransform3 );
 		  registration->InPlaceOn();
@@ -444,9 +446,17 @@ int main( int argc, char *argv[] )
 	  double metricValue3 = optimizer->GetCurrentMetricValue();
 	  outfile_metric << metricValue3 << std::endl;
 
+	  std::cout << initialTransform3->GetParameters() << std::endl;
+	  std::cout << initialTransform3->GetMatrix() << std::endl;
+	  std::cout << initialTransform3->GetTranslation() << std::endl;
+	  std::cout << initialTransform3->GetRotationMatrix() << std::endl;
+
 	  // Two-level registrtaion
 	  //
 	  if (imageIndex==1) {
+		  metric->SetTemporalSmoothness1(zero);
+		  metric->SetTemporalSmoothness2(zero);
+
 		  initializer->SetTransform(   initialTransform2 );
 	      initializer->SetFixedImage(  fixedImage );
 	      initializer->SetMovingImage( movingImage );
@@ -468,11 +478,10 @@ int main( int argc, char *argv[] )
 		  registration->SetInitialTransform( initialTransform2 );
 		  registration->InPlaceOn();
 	  } else {
+		  metric->SetTemporalSmoothness1(w1);
+		  metric->SetTemporalSmoothness2(w2);
+
 		  outputTransform2 = outputTransform->Clone();
-		  initializer->SetTransform(   outputTransform2 );
-	      initializer->SetFixedImage(  fixedImage );
-	      initializer->SetMovingImage( movingImage );
-		  initializer->InitializeTransform();
 
 		  registration->SetInitialTransform( outputTransform2 );
 		  registration->InPlaceOn();
@@ -558,6 +567,9 @@ int main( int argc, char *argv[] )
 	  // Single-level registration
 	  //
 	  if (imageIndex==1) {
+		  metric->SetTemporalSmoothness1(zero);
+		  metric->SetTemporalSmoothness2(zero);
+
 		  initializer->SetTransform(   initialTransform1 );
 	      initializer->SetFixedImage(  fixedImage );
 	      initializer->SetMovingImage( movingImage );
@@ -579,11 +591,10 @@ int main( int argc, char *argv[] )
 		  registration->SetInitialTransform( initialTransform1 );
 		  registration->InPlaceOn();
 	  } else {
+		  metric->SetTemporalSmoothness1(w1);
+		  metric->SetTemporalSmoothness2(w2);
+
 		  outputTransform1 = outputTransform->Clone();
-		  initializer->SetTransform(   outputTransform1 );
-	      initializer->SetFixedImage(  fixedImage );
-	      initializer->SetMovingImage( movingImage );
-		  initializer->InitializeTransform();
 
 		  registration->SetInitialTransform( outputTransform1 );
 		  registration->InPlaceOn();
@@ -690,6 +701,11 @@ int main( int argc, char *argv[] )
 	  }
 
 	  transformParameters = outputTransform->GetParameters();
+	  for (int i=0; i<6; i++)
+	  {
+		  t[i] = transformParameters[i];
+	  }
+	  metric->SetPreviousTransformParameters(t, 6);
 	  std::cout << "Center: " << outputTransform->GetCenter() << std::endl;
 	  std::cout << "Matrix: " << outputTransform->GetMatrix() << std::endl;
 	  std::cout << "Offset: " << outputTransform->GetOffset() << std::endl;

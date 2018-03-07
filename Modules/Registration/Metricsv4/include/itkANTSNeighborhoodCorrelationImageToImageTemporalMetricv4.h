@@ -90,6 +90,8 @@ namespace itk {
  *
  * \ingroup ITKMetricsv4
  */
+
+
 template<typename TFixedImage, typename TMovingImage, typename TVirtualImage = TFixedImage,
           typename TInternalComputationValueType = double,
           typename TMetricTraits = DefaultImageToImageMetricTraitsv4<TFixedImage,TMovingImage,TVirtualImage,TInternalComputationValueType>
@@ -175,6 +177,7 @@ public:
   void SetPreviousTransformParameters(double *t, int num);
   void SetPreviousNumberOfValidPoints(double count);
   void SetCurrentNumberOfValidPoints(double count);
+  void SetTransformModel(std::string t);
 
 
   double GetTemporalSmoothness1();
@@ -183,6 +186,7 @@ public:
   int GetNumOfTransformParameters();
   double GetPreviousNumberOfValidPoints();
   double GetCurrentNumberOfValidPoints();
+  std::string GetTransformModel();
 
   void Initialize(void) throw ( itk::ExceptionObject ) ITK_OVERRIDE;
 
@@ -211,6 +215,7 @@ private:
   double PreviousNumberOfValidPoints;
   double CurrentNumberOfValidPoints;
   int NumOfTransformParameters;
+  std::string TransformModel;
 
 };
 

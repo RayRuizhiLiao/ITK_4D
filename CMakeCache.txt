@@ -20,7 +20,7 @@
 ########################
 
 //This is the directory where this CMakeCache.txt was created
-CMAKE_CACHEFILE_DIR:INTERNAL=/data/vision/polina/projects/placenta/code/ITK_4D/ITK-4.12.2
+CMAKE_CACHEFILE_DIR:INTERNAL=/Users/ruizhiliao/Documents/ITK_4D/ITK_4D-source
 //Major version of cmake used to create the current loaded cache
 CMAKE_CACHE_MAJOR_VERSION:INTERNAL=2
 //Minor version of cmake used to create the current loaded cache
