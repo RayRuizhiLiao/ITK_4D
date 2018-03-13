@@ -535,8 +535,6 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
     for (int i=0; i<=2; i++) {
       if (w1!=0) {
     	    localCC -= 0.5*w1*(currentT[i]-prevT[i])*(currentT[i]-prevT[i]);
-    	    std::cout << currentT[0] << " " << currentT[1] << " " << currentT[2] << " " << currentT[3] << " " << currentT[4] << " " << currentT[5] << std::endl;
-    	    std::cout << prevT[0] << " " << prevT[1] << " " << prevT[2] << " " << prevT[3] << " " << prevT[4] << " " << prevT[5] << std::endl;
       }
     }
     for (int i=3; i<=5; i++) {
@@ -596,8 +594,6 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
           if (par<3) {
         	    if (w1!=0) {
         	    	  deriv[par] -= w1*(currentT[par]-prevT[par]);
-        	    	  std::cout << "here " << currentT[0] << " " << currentT[1] << " " << currentT[2] << " " << currentT[3] << " " << currentT[4] << " " << currentT[5] << std::endl;
-        	    	  std::cout << prevT[0] << " " << prevT[1] << " " << prevT[2] << " " << prevT[3] << " " << prevT[4] << " " << prevT[5] << std::endl;
         	    }
           }
           else {
