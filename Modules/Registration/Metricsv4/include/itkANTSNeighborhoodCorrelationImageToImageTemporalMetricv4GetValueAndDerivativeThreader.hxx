@@ -547,7 +547,7 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
   if (transformType == bspline) {
     for (int i=0; i<numParameters; i++) {
       if (w1!=0) {
-    	    localCC -= 0.5*w1*(currentT[i]-prevT[i])*(currentT[i]-prevT[i]);
+    	    localCC -= 0.5*w1*(currentT[i]-prevT[i])*(currentT[i]-prevT[i])/double(numParameters);
       }
     }
   }
@@ -605,7 +605,7 @@ ANTSNeighborhoodCorrelationImageToImageTemporalMetricv4GetValueAndDerivativeThre
 
       if (transformType == bspline) {
         	  if (w1!=0) {
-        	    	deriv[par] -= w1*(currentT[par]-prevT[par]);
+        	    	deriv[par] -= w1*(currentT[par]-prevT[par])/double(numberOfLocalParameters);
         	  }
         }
 
