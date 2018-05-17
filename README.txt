@@ -1,3 +1,13 @@
+This is a software built from ITK for temporal registration as described in http://people.csail.mit.edu/ruizhi/tmpReg. Temporal rigid registration is released.
+
+Usage:
+${binPath}TemporalRegistration_Rigid outputPath numOfImages fixedImageMask weightOfTemporalRotationSmoothness weightOfTemporalTranslationSmoothness fixedImage movingImage1 [...]
+
+Example:
+${binPath}TemporalRegistration_Rigid ../registration_results/ 5 1 0 ../imageDir/1.nii.gz ../imageDir/2.nii.gz ../imageDir/3.nii.gz ../imageDir/4.nii.gz ../imageDir/5.nii.gz
+
+-----
+
 ITK: The Insight Toolkit for Segmentation and Registration
 
 
@@ -28,12 +38,3 @@ contained in both.
 
 The toolkit may be built from source using CMake (http://cmake.org).
 
-
-Copyright
----------
-
-The Insight Software Consortium (http://www.insightsoftwareconsortium.org)
-holds the copyright of this software. This is a non-profit entity that
-promotes the use of ITK for educational and research purposes. ITK is
-distributed under a license that enables use for both non-commercial and
-commercial applications. See LICENSE and NOTICE files for details.
