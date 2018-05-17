@@ -1,4 +1,4 @@
-This is a software built from ITK for temporal registration as described in http://people.csail.mit.edu/ruizhi/tmpReg. Temporal rigid registration is released. 
+This is a software built from ITK for temporal registration as described in http://people.csail.mit.edu/ruizhi/tmpReg. The registration code with rigid transformation model is released. It may be built from source using CMake (http://cmake.org).
 
 Usage:
 ${binPath}TemporalRegistration_Rigid $outputPath $numOfImages $fixedImageMask $weightOfTemporalRotationSmoothness $weightOfTemporalTranslationSmoothness $fixedImage $movingImage1 [...]
@@ -6,20 +6,7 @@ ${binPath}TemporalRegistration_Rigid $outputPath $numOfImages $fixedImageMask $w
 Example:
 ${binPath}TemporalRegistration_Rigid ../registration_results/ 5 ../imageDir/1_mask.nii.gz 1 0 ../imageDir/1.nii.gz ../imageDir/2.nii.gz ../imageDir/3.nii.gz ../imageDir/4.nii.gz ../imageDir/5.nii.gz
 
-Please contact ruizhi [at] mit.edu for any question.
-
------
-Links
------
-
-* Homepage: https://itk.org
-* Download: https://itk.org/ITK/resources/software.html
-* Mailing List: https://itk.org/ITK/help/mailing.html
-* Book: https://itk.org/ITK/help/book.html
-* Help: https://itk.org/ITK/help/help.html
-* Examples: https://itk.org/ITKExamples/
-* Bugtracker: https://issues.itk.org/
-* Submit a patch: https://itk.org/Wiki/ITK/Git/Develop
+Please contact Ray (ruizhi [at] mit.edu) for any question.
 
 -----
 About ITK
@@ -34,5 +21,15 @@ correspondences between data. For example, in the medical environment, a
 CT scan may be aligned with a MRI scan in order to combine the information
 contained in both.
 
-The toolkit may be built from source using CMake (http://cmake.org).
+-----
+Links
+-----
 
+* Homepage: https://itk.org
+* Download: https://itk.org/ITK/resources/software.html
+* Mailing List: https://itk.org/ITK/help/mailing.html
+* Book: https://itk.org/ITK/help/book.html
+* Help: https://itk.org/ITK/help/help.html
+* Examples: https://itk.org/ITKExamples/
+* Bugtracker: https://issues.itk.org/
+* Submit a patch: https://itk.org/Wiki/ITK/Git/Develop
