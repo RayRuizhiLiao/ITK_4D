@@ -15,7 +15,7 @@ add_subdirectory(Numerics)
 add_subdirectory(Segmentation)
 add_subdirectory(SpatialObjects)
 add_subdirectory(Statistics)
-add_subdirectory(RegistrationITKv4)
+add_subdirectory(TemporalRegistration)
 
 if(ITKV3_COMPATIBILITY)
   add_subdirectory(RegistrationITKv3)
