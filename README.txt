@@ -1,16 +1,14 @@
-This is a software built from ITK for temporal registration as described in http://people.csail.mit.edu/ruizhi/tmpReg. Temporal rigid registration is released.
+This is a software built from ITK for temporal registration as described in http://people.csail.mit.edu/ruizhi/tmpReg. Temporal rigid registration is released. 
 
 Usage:
 ${binPath}TemporalRegistration_Rigid outputPath numOfImages fixedImageMask weightOfTemporalRotationSmoothness weightOfTemporalTranslationSmoothness fixedImage movingImage1 [...]
 
 Example:
-${binPath}TemporalRegistration_Rigid ../registration_results/ 5 1 0 ../imageDir/1.nii.gz ../imageDir/2.nii.gz ../imageDir/3.nii.gz ../imageDir/4.nii.gz ../imageDir/5.nii.gz
+${binPath}TemporalRegistration_Rigid ../registration_results/ 5 ../imageDir/1_mask.nii.gz 1 0 ../imageDir/1.nii.gz ../imageDir/2.nii.gz ../imageDir/3.nii.gz ../imageDir/4.nii.gz ../imageDir/5.nii.gz
+
+Please contact ruizhi [at] mit.edu for any question.
 
 -----
-
-ITK: The Insight Toolkit for Segmentation and Registration
-
-
 Links
 -----
 
@@ -23,8 +21,8 @@ Links
 * Bugtracker: https://issues.itk.org/
 * Submit a patch: https://itk.org/Wiki/ITK/Git/Develop
 
-
-About
+-----
+About ITK
 -----
 
 ITK is an open-source, cross-platform C++ toolkit for segmentation and
