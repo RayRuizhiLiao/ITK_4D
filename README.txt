@@ -1,4 +1,6 @@
-This is an implementation of temporal registration as described in http://people.csail.mit.edu/ruizhi/tmpReg. The registration code with rigid transformation model is released. The implementation is based on ITK. It can be built from source using CMake (http://cmake.org).
+This is an implementation of temporal registration as described in http://people.csail.mit.edu/ruizhi/tmpReg. The implementation is based on ITK. It can be built from source using CMake (http://cmake.org).
+
+The registration code with rigid transformation model is released. 
 
 Usage:
 ${binPath}TemporalRegistration_Rigid $outputPath $numOfImages $fixedImageMask $weightOfTemporalRotationSmoothness $weightOfTemporalTranslationSmoothness $fixedImage $movingImage1 [...]
