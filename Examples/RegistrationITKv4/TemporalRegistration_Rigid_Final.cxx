@@ -237,9 +237,9 @@ int main( int argc, char *argv[] )
   outfile_parameters.open(outputTransformParameters.c_str(), std::ofstream::out|std::ofstream::app);
 
   double w1;
-  std::sscanf(argv[5], "%lf", &w1);
+  std::sscanf(argv[4], "%lf", &w1);
   double w2;
-  std::sscanf(argv[6], "%lf", &w2);
+  std::sscanf(argv[5], "%lf", &w2);
 
 
   TransformType::Pointer  outputTransform1 = TransformType::New();
@@ -255,13 +255,13 @@ int main( int argc, char *argv[] )
   for (int imageIndex=1; imageIndex<numOfImages; imageIndex++) {
 
 
-	  movingImageReader->SetFileName(  argv[7+imageIndex] );
-	  fixedImageReader->SetFileName( argv[7] );
+	  movingImageReader->SetFileName(  argv[6+imageIndex] );
+	  fixedImageReader->SetFileName( argv[6] );
 
-	  std::string movingImageName(argv[7+imageIndex]);
+	  std::string movingImageName(argv[6+imageIndex]);
 	  std::string slash = "/";
 	  std::size_t movingSlashIndex = movingImageName.find_last_of(slash);
-	  std::string fixedImageName(argv[7]);
+	  std::string fixedImageName(argv[6]);
 	  std::size_t fixedSlashIndex = fixedImageName.find_last_of(slash);
 
 	  std::string movedImageName = outputFolder + movingImageName.substr(movingSlashIndex+1, movingImageName.length()-movingSlashIndex-8) + "_to_" + fixedImageName.substr(fixedSlashIndex+1, fixedImageName.length()-fixedSlashIndex-8) + ".nii.gz";
