@@ -1,4 +1,4 @@
-This is an implementation of temporal registration as described in http://people.csail.mit.edu/ruizhi/tmpReg. The implementation is based on ITK. It can be built from source using CMake (http://cmake.org).
+This is an implementation of temporal registration as described in http://people.csail.mit.edu/ruizhi/tmpReg. The implementation is based on ITK. It can be built from source using CMake (http://cmake.org) (BUILD_EXAMPLES needs to be ON).
 
 The registration code with rigid transformation model is released. 
 
