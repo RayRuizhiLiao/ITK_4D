@@ -5,7 +5,7 @@ The registration code with rigid transformation model is released.
 Usage:
 ${bin}TemporalRegistration_Rigid $output_dir $num_of_images $fixed_image_mask $weight_of_temporal_rotation_smoothness $weight_of_temporal_translation_smoothness $fixed_image $moving_image_1 [...]
 
-Example:
+Example (recommended parameter setting):
 ${bin}TemporalRegistration_Rigid ../registration_results/ 5 ../image_dir/fixed_image_mask.nii.gz 1 0 ../image_dir/fixed_image.nii.gz ../image_dir/moving_image_1.nii.gz ../image_dir/moving_image_2.nii.gz ../image_dir/moving_image_3.nii.gz ../image_dir/moving_image_4.nii.gz
 
 Please contact Ray (ruizhi [at] mit.edu) for any question.
