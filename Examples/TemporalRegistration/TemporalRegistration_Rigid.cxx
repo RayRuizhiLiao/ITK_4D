@@ -48,7 +48,7 @@ protected:
 public:
 	typedef   TRegistration      RegistrationType;
 	typedef   RegistrationType * RegistrationPointer;
-	typedef 	itk::LBFGSBOptimizerv4       OptimizerType;
+	typedef   itk::LBFGSBOptimizerv4       OptimizerType;
 	typedef   OptimizerType * OptimizerPointer;
 
 
@@ -144,7 +144,7 @@ int main( int argc, char *argv[] )
 	{
 		std::cerr << "Missing Parameters " << std::endl;
 		std::cerr << "Usage: " << argv[0];
-		std::cerr << " outputPath numOfImages fixedImageMask weightOfTemporalRotationSmoothness weightOfTemporalTranslationSmoothness fixedImage movingImage1 [...]";
+		std::cerr << " outputPath numOfImages weightOfTemporalRotationSmoothness weightOfTemporalTranslationSmoothness fixedImageMask fixedImage movingImage1 [...]";
 		return EXIT_FAILURE;
 	}
 
@@ -197,17 +197,17 @@ int main( int argc, char *argv[] )
 
 	int numOfImages = 0;
 	std::sscanf(argv[2], "%d", &numOfImages);
-	fixedMaskImageReader->SetFileName( argv[3] );
-
-	double w1;
-	std::sscanf(argv[4], "%lf", &w1);
-	double w2;
-	std::sscanf(argv[5], "%lf", &w2);
+	double w_rotation;
+	std::sscanf(argv[3], "%lf", &w_rotation);
+	double w_translation;
+	std::sscanf(argv[4], "%lf", &w_translation);
 	double zero=0;
 
+	fixedMaskImageReader->SetFileName( argv[5] );
+
 	std::cout << "There are " << numOfImages << " images in the given series!" << std::endl;
-	std::cout << "Mask for the fixed image is " << argv[3] << std::endl;
-	std::cout << "Weights for temporal smoothness terms (rotation and translation) are " << argv[4] << " and " << argv[5] << std::endl;
+	std::cout << "Weights for temporal smoothness terms (rotation and translation) are " << argv[3] << " and " << argv[4] << std::endl;
+	std::cout << "Mask for the fixed image is " << argv[5] << std::endl;
 	std::cout << "Registration results will be saved in " << outputFolder << std::endl;
 
 	double* t = new double[6];
@@ -319,8 +319,8 @@ int main( int argc, char *argv[] )
 		}	else
 		{
 			// Set temporal smoothness term weights after the first pairwise registration
-			metric->SetTemporalSmoothness1(w1);
-			metric->SetTemporalSmoothness2(w2);
+			metric->SetTemporalSmoothness1(w_rotation);
+			metric->SetTemporalSmoothness2(w_translation);
 
 			// Initialize the transformation with the estimation at the previous step
 			outputTransform3 = outputTransform->Clone();
@@ -441,8 +441,8 @@ int main( int argc, char *argv[] )
 		} else
 		{
 			// Set temporal smoothness term weights after the first pairwise registration
-			metric->SetTemporalSmoothness1(w1);
-			metric->SetTemporalSmoothness2(w2);
+			metric->SetTemporalSmoothness1(w_rotation);
+			metric->SetTemporalSmoothness2(w_translation);
 
 			// Initialize the transformation with the estimation at the previous step
 			outputTransform2 = outputTransform->Clone();
@@ -550,8 +550,8 @@ int main( int argc, char *argv[] )
 		else
 		{
 			// Set temporal smoothness term weights after the first pairwise registration
-			metric->SetTemporalSmoothness1(w1);
-			metric->SetTemporalSmoothness2(w2);
+			metric->SetTemporalSmoothness1(w_rotation);
+			metric->SetTemporalSmoothness2(w_translation);
 
 			// Initialize the transformation with the estimation at the previous step
 			outputTransform1 = outputTransform->Clone();
