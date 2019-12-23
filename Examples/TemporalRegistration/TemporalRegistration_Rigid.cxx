@@ -28,6 +28,10 @@
 
 #include "itkCommand.h"
 
+#include <bits/stdc++.h>
+#include <iostream>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 //  The following section of code implements a Command observer
 //  used to monitor the evolution of the registration process.
@@ -144,7 +148,7 @@ int main( int argc, char *argv[] )
 	{
 		std::cerr << "Missing Parameters " << std::endl;
 		std::cerr << "Usage: " << argv[0];
-		std::cerr << " outputPath numOfImages weightOfTemporalRotationSmoothness weightOfTemporalTranslationSmoothness fixedImageMask fixedImage movingImage1 [...]";
+		std::cerr << " outputFolder numOfImages weightOfTemporalRotationSmoothness weightOfTemporalTranslationSmoothness fixedImageMask fixedImage movingImage1 movingImage2 [...]\n";
 		return EXIT_FAILURE;
 	}
 
@@ -194,6 +198,7 @@ int main( int argc, char *argv[] )
 
 	// Read given parameters
 	std::string outputFolder(argv[1]);
+	mkdir(argv[1], 0777);
 
 	int numOfImages = 0;
 	std::sscanf(argv[2], "%d", &numOfImages);
